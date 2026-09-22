@@ -8,3 +8,6 @@ uploads/avatars/*
 *.log
 .pytest_cache/
 scrapy.cfg.local
+
+# Frontend lives in its own separate repo/deployment — never tracked from here.
+mop-tracker-web/

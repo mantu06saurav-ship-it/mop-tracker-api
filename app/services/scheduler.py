@@ -14,7 +14,7 @@ from app.core.constants import AUTO_SCRAPE_PORTALS
 from app.db.session import get_conn
 from app.services import email_state
 from app.services.job_store import job_store
-from app.services.scrape_orchestrator import run_scrape_job
+from app.services.scrape_orchestrator import run_all_portals_job, run_scrape_job
 
 logger = logging.getLogger("mop_tracker.scheduler")
 
@@ -34,6 +34,13 @@ def fetch_records_from_db(portal: str) -> list[dict]:
 def start_job(portal: str, records: list[dict]) -> str:
     job_id = job_store.create(len(records))
     asyncio.create_task(run_scrape_job(job_id, portal, records))
+    return job_id
+
+
+def start_all_portals_job(portal_records: dict[str, list[dict]]) -> str:
+    total = sum(len(records) for records in portal_records.values())
+    job_id = job_store.create(total)
+    asyncio.create_task(run_all_portals_job(job_id, portal_records))
     return job_id
 
 

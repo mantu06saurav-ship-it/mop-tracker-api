@@ -1,6 +1,7 @@
 from functools import lru_cache
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
+from sqlalchemy.engine import URL
 
 
 class Settings(BaseSettings):
@@ -34,12 +35,21 @@ class Settings(BaseSettings):
         return [o.strip() for o in self.cors_origins.split(",") if o.strip()]
 
     @property
-    def sqlalchemy_url(self) -> str:
-        driver = self.db_odbc_driver.replace(" ", "+")
-        return (
-            f"mssql+pyodbc://{self.db_user}:{self.db_password}"
-            f"@{self.db_server}:{self.db_port}/{self.db_name}"
-            f"?driver={driver}&TrustServerCertificate=yes&Encrypt=no"
+    def sqlalchemy_url(self) -> URL:
+        # Built via URL.create (not an f-string) so special characters in the username/password
+        # — e.g. a literal "@" — get percent-encoded instead of corrupting the connection string.
+        return URL.create(
+            "mssql+pyodbc",
+            username=self.db_user,
+            password=self.db_password,
+            host=self.db_server,
+            port=self.db_port,
+            database=self.db_name,
+            query={
+                "driver": self.db_odbc_driver,
+                "TrustServerCertificate": "yes",
+                "Encrypt": "no",
+            },
         )
 
 

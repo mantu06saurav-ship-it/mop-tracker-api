@@ -33,7 +33,7 @@ class SnapdealSpider(scrapy.Spider):
         self.records = records or []
         self.batch_id = batch_id
 
-    def start_requests(self):
+    async def start(self):
         import random
 
         for record in self.records:

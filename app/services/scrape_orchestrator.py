@@ -68,3 +68,26 @@ async def run_scrape_job(job_id: str, portal: str, records: list[dict]) -> None:
     except Exception as exc:  # noqa: BLE001 — one job's crawl-start failure must not affect others
         logger.exception("Scrape job %s (%s) failed", job_id, portal)
         job_store.set_status(job_id, "FAILED", last_error=str(exc))
+
+
+async def run_all_portals_job(job_id: str, portal_records: dict[str, list[dict]]) -> None:
+    """Same job_id/progress counters as run_scrape_job, but walks every portal's spider in
+    sequence — one browser-driven crawl at a time, same as the scheduler's own auto-scrape sweep.
+    """
+    ensure_reactor_installed()
+    job_store.set_status(job_id, "RUNNING")
+
+    try:
+        for portal, records in portal_records.items():
+            if not records:
+                continue
+            spider_cls = SPIDER_MAP.get(portal)
+            if spider_cls is None:
+                continue
+            runner = CrawlerRunner(SCRAPY_SETTINGS)
+            deferred = runner.crawl(spider_cls, records=records, batch_id=job_id)
+            await deferred_to_future(deferred)
+        job_store.set_status(job_id, "DONE")
+    except Exception as exc:  # noqa: BLE001 — one portal's crawl-start failure must not affect others
+        logger.exception("All-portals scrape job %s failed", job_id)
+        job_store.set_status(job_id, "FAILED", last_error=str(exc))

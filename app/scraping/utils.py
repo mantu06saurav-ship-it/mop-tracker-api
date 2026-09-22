@@ -69,3 +69,19 @@ def base_result(**overrides) -> dict:
     result = dict(EMPTY_RESULT)
     result.update(overrides)
     return result
+
+
+# Resource types that never affect the data we scrape (price/title/rating/etc. all come from the
+# initial document or small JSON XHRs) but are the heaviest thing on these pages — product photo
+# galleries, web fonts and, on Flipkart, an autoplaying promo video that keeps streaming .m4s
+# chunks for as long as the page stays open. Aborting them cuts page-load time drastically and
+# stops the video stream from keeping the page "busy" long after we've already extracted the data.
+_ABORT_RESOURCE_TYPES = {"image", "media", "font"}
+_ABORT_URL_SUBSTRINGS = (".m4s", "transcode-video", "/vod1.", "/vod2.")
+
+
+def should_abort_request(request) -> bool:
+    if request.resource_type in _ABORT_RESOURCE_TYPES:
+        return True
+    url = request.url.lower()
+    return any(needle in url for needle in _ABORT_URL_SUBSTRINGS)

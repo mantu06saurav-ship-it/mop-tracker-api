@@ -337,7 +337,7 @@ class FlipkartSpider(scrapy.Spider):
         self.records = records or []
         self.batch_id = batch_id
 
-    def start_requests(self):
+    async def start(self):
         for record in self.records:
             code = record.get("code")
             url = f"https://www.flipkart.com/product/p/itm?pid={code}"

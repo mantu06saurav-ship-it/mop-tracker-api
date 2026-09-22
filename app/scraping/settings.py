@@ -33,6 +33,7 @@ SCRAPY_SETTINGS = {
         "http": "scrapy_playwright.handler.ScrapyPlaywrightDownloadHandler",
         "https": "scrapy_playwright.handler.ScrapyPlaywrightDownloadHandler",
     },
+    "PLAYWRIGHT_ABORT_REQUEST": "app.scraping.utils.should_abort_request",
     "PLAYWRIGHT_BROWSER_TYPE": "chromium",
     "PLAYWRIGHT_LAUNCH_OPTIONS": {
         "headless": True,
