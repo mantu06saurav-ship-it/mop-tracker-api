@@ -1,0 +1,28 @@
+fastapi>=0.115.0
+uvicorn[standard]>=0.30.6
+pydantic>=2.9.2
+pydantic[email]>=2.9.2
+pydantic-settings>=2.5.2
+python-dotenv>=1.0.1
+
+# Database (MSSQL — same server/schema as the Node app)
+sqlalchemy>=2.0.35
+pyodbc>=5.1.0
+
+# Auth
+pyjwt>=2.9.0
+bcrypt>=4.2.0
+
+# File uploads / Excel
+python-multipart>=0.0.9
+openpyxl>=3.1.5
+pandas>=2.2.3
+
+# Scheduling (node-cron equivalent)
+apscheduler>=3.10.4
+
+# Scraping
+scrapy>=2.11.2
+scrapy-playwright>=0.0.41
+playwright>=1.47.0
+itemadapter>=0.9.0
