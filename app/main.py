@@ -16,6 +16,7 @@ from app.api.routes import (
     latest_zfg,
     mop_data,
     reports,
+    scrape_schedule,
     seller_mapping,
     users,
 )
@@ -64,6 +65,7 @@ app.include_router(jobs.router)
 app.include_router(reports.router)
 app.include_router(seller_mapping.router)
 app.include_router(email_settings.router)
+app.include_router(scrape_schedule.router)
 app.include_router(inventory.router)
 app.include_router(latest_zfg.router)
 app.include_router(audit.router)

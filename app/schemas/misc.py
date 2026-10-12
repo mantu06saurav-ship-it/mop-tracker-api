@@ -23,5 +23,10 @@ class EmailSettingsRequest(BaseModel):
     enabled: bool
 
 
+class ScrapeScheduleRequest(BaseModel):
+    enabled: bool
+    times: list[str]
+
+
 class SendBelowMopReportRequest(BaseModel):
     to: EmailStr

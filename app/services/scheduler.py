@@ -1,10 +1,11 @@
-"""node-cron equivalent: a 4x-daily sequential auto-scrape sweep across all 5 portals, plus a
+"""Configurable daily sequential auto-scrape sweep across all 5 portals, plus a
 per-minute check that fires the daily snapshot email once `send_time` has passed for the day.
 """
 
 import asyncio
 import logging
 from datetime import datetime
+from zoneinfo import ZoneInfo
 
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.cron import CronTrigger
@@ -17,6 +18,9 @@ from app.services.job_store import job_store
 from app.services.scrape_orchestrator import run_all_portals_job, run_scrape_job
 
 logger = logging.getLogger("mop_tracker.scheduler")
+_SCHEDULE_TZ = ZoneInfo("Asia/Kolkata")
+_DEFAULT_SCRAPE_TIMES = ["00:00", "06:00", "12:00", "18:00"]
+_scheduler: AsyncIOScheduler | None = None
 
 
 def fetch_records_from_db(portal: str) -> list[dict]:
@@ -47,11 +51,13 @@ def start_all_portals_job(portal_records: dict[str, list[dict]]) -> str:
 async def _auto_scrape_tick() -> None:
     # Sequential, not parallel — avoids multiple concurrent Chromium instances, same as the
     # Node app's cron handler.
-    for portal in AUTO_SCRAPE_PORTALS:
-        records = fetch_records_from_db(portal)
-        if records:
-            job_id = start_job(portal, records)
-            logger.info("Auto-scrape started portal=%s job_id=%s records=%d", portal, job_id, len(records))
+    portal_records = {portal: fetch_records_from_db(portal) for portal in AUTO_SCRAPE_PORTALS}
+    total = sum(len(records) for records in portal_records.values())
+    if not total:
+        logger.info("Auto-scrape skipped: no rows are configured")
+        return
+    job_id = start_all_portals_job(portal_records)
+    logger.info("Auto-scrape sweep started job_id=%s records=%d", job_id, total)
 
 
 async def _email_tick() -> None:
@@ -94,9 +100,48 @@ async def _email_tick() -> None:
         email_state.release()
 
 
+def configure_auto_scrape_schedule(enabled: bool, times: list[str]) -> None:
+    if _scheduler is None:
+        return
+
+    for job in _scheduler.get_jobs():
+        if job.id.startswith("auto_scrape_"):
+            _scheduler.remove_job(job.id)
+
+    if not enabled:
+        logger.info("Automatic scrape schedule disabled")
+        return
+
+    for run_time in sorted(set(times)):
+        try:
+            hour, minute = (int(part) for part in run_time.split(":"))
+        except (ValueError, AttributeError):
+            logger.warning("Ignoring invalid automatic scrape time %r", run_time)
+            continue
+        if not 0 <= hour <= 23 or not 0 <= minute <= 59:
+            logger.warning("Ignoring invalid automatic scrape time %r", run_time)
+            continue
+        job_id = f"auto_scrape_{hour:02d}{minute:02d}"
+        _scheduler.add_job(
+            _auto_scrape_tick,
+            CronTrigger(hour=hour, minute=minute, timezone=_SCHEDULE_TZ),
+            id=job_id,
+            replace_existing=True,
+            max_instances=1,
+            coalesce=True,
+        )
+    logger.info("Automatic scrape schedule updated enabled=%s times=%s IST", enabled, sorted(set(times)))
+
+
 def start_scheduler() -> AsyncIOScheduler:
-    scheduler = AsyncIOScheduler()
-    scheduler.add_job(_auto_scrape_tick, CronTrigger.from_crontab("0 0,6,12,18 * * *"), id="auto_scrape")
+    global _scheduler
+    scheduler = AsyncIOScheduler(timezone=_SCHEDULE_TZ)
+    with get_conn() as conn:
+        row = conn.execute(text("SELECT enabled, times FROM dbo.scrape_schedule_settings WHERE id = 1")).fetchone()
+    enabled = bool(row.enabled) if row is not None else True
+    times = sorted(set(time.strip() for time in row.times.split(",") if time.strip())) if row is not None and row.times else _DEFAULT_SCRAPE_TIMES
+    _scheduler = scheduler
+    configure_auto_scrape_schedule(enabled, times)
     scheduler.add_job(_email_tick, CronTrigger.from_crontab("* * * * *"), id="email_tick")
     scheduler.start()
     return scheduler

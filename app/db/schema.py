@@ -259,6 +259,32 @@ def ensure_email_settings(conn) -> None:
         _add_column_if_missing(conn, "email_settings", "last_delivery", "NVARCHAR(MAX)")
 
 
+def ensure_scrape_schedule_settings(conn) -> None:
+    if not _table_exists(conn, "scrape_schedule_settings"):
+        conn.execute(
+            text(
+                """
+                CREATE TABLE dbo.scrape_schedule_settings (
+                    id INT PRIMARY KEY,
+                    enabled BIT NOT NULL DEFAULT 1,
+                    times NVARCHAR(500) NOT NULL,
+                    updated_by NVARCHAR(150),
+                    updated_at DATETIME
+                )
+                """
+            )
+        )
+    conn.execute(
+        text(
+            """
+            IF NOT EXISTS (SELECT 1 FROM dbo.scrape_schedule_settings WHERE id = 1)
+                INSERT INTO dbo.scrape_schedule_settings (id, enabled, times)
+                VALUES (1, 1, N'00:00,06:00,12:00,18:00')
+            """
+        )
+    )
+
+
 def ensure_all_tables() -> None:
     with get_conn() as conn:
         ensure_mop_tracker(conn)
@@ -268,4 +294,5 @@ def ensure_all_tables() -> None:
         ensure_users(conn)
         ensure_seller_mapping(conn)
         ensure_email_settings(conn)
+        ensure_scrape_schedule_settings(conn)
     logger.info("Database schema check complete.")

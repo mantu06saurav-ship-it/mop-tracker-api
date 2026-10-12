@@ -51,6 +51,7 @@ unchanged), grouped here by area:
 | Dashboard/reports | `GET /dashboard`, `GET /batches`, `GET /api/trends`, `GET /api/portal-breakdown`, `GET /api/compliance-daily`, `GET /report/download` |
 | Seller mapping | `GET/POST /api/seller-mapping`, `PUT/DELETE /api/seller-mapping/{id}`, `PUT /api/seller-mapping/{id}/email-toggle` |
 | Email | `GET/PUT /api/email-settings`, `POST /api/email-settings/send-now`, `POST /send-below-mop-report` |
+| Auto-scrape schedule | `GET/PUT /api/scrape-schedule` (Super Admin updates; authenticated users can view) |
 | Inventory | `GET /inventory-data-status`, `POST /upload-inventory-data`, `GET /inventory-data` |
 | SAP ZFG master data | `GET /latest-zfg-status`, `POST /upload-latest-zfg`, `GET /latest-zfg-data` |
 | Audit report | `GET /api/audit-report`, `GET /api/audit-report/download` |
@@ -72,8 +73,10 @@ lost on restart), and runs the crawl as a background `asyncio` task
 Twisted's asyncio reactor rather than shelling out to a subprocess, so job progress updates
 land in the same in-memory store you poll via `GET /job/{job_id}`.
 
-A 4x-daily auto-scrape sweep and a per-minute daily-email check run via APScheduler
-(`app/services/scheduler.py`), replacing the Node app's `node-cron` jobs.
+The configurable daily auto-scrape sweep and a per-minute daily-email check run via APScheduler
+(`app/services/scheduler.py`). Auto-scrape times are stored in `dbo.scrape_schedule_settings`,
+editable by a Super Admin under Manage Users â†’ Auto-Scrape, and use Asia/Kolkata time. A new
+installation keeps the existing default schedule of 00:00, 06:00, 12:00, and 18:00 IST.
 
 ## Deliberate differences from the Node app
 

@@ -1,7 +1,6 @@
 USER_ROLES = ["Super Admin", "Manager", "Viewer"]
 ADMIN_ROLES = ["Super Admin"]
 
-AUTO_SCRAPE_CRON = "0 0,6,12,18 * * *"
 AUTO_SCRAPE_PORTALS = ["flipkart", "amazon", "myntra", "snapdeal", "ajio"]
 DEFAULT_PINCODE = "110001"
 
