@@ -8,7 +8,14 @@ two-pattern URL fallback rather than a single deterministic HTTP GET.
 import scrapy
 
 from app.scraping.items import ScrapedItem
-from app.scraping.utils import base_result, parse_price, price_status
+from app.scraping.utils import (
+    base_result,
+    close_failed_page,
+    close_page,
+    on_page_loop,
+    parse_price,
+    price_status,
+)
 from app.services.job_store import job_store
 
 _EVAL_JS = r"""
@@ -180,7 +187,8 @@ class MyntraSpider(scrapy.Spider):
         )
         return item
 
-    def errback_try_next_url(self, failure):
+    async def errback_try_next_url(self, failure):
+        await close_failed_page(failure)
         record = failure.request.meta["record"]
         self.logger.warning(
             "%s %s: first URL pattern failed (%s), trying fallback pattern",
@@ -188,9 +196,10 @@ class MyntraSpider(scrapy.Spider):
             record.get("code"),
             failure.value,
         )
-        return self._next_url_request(record)
+        yield self._next_url_request(record)
 
-    def errback_final(self, failure):
+    async def errback_final(self, failure):
+        await close_failed_page(failure)
         record = failure.request.meta["record"]
         self.logger.warning(
             "%s %s: fallback URL pattern also failed (%s)",
@@ -198,7 +207,7 @@ class MyntraSpider(scrapy.Spider):
             record.get("code"),
             failure.value,
         )
-        return self._timeout_item(record)
+        yield self._timeout_item(record)
 
     async def parse(self, response):
         record = response.meta["record"]
@@ -206,40 +215,16 @@ class MyntraSpider(scrapy.Spider):
         page = response.meta["playwright_page"]
 
         try:
-            loaded_ok = True
-            try:
-                await page.wait_for_selector("body", timeout=15000)
-            except Exception:  # noqa: BLE001
-                loaded_ok = False
-
-            if not loaded_ok:
-                await page.close()
-                if url_attempt == 1:
-                    yield self._next_url_request(record)
-                else:
-                    yield self._timeout_item(record)
-                return
-
-            await page.wait_for_timeout(3000)
-            await page.evaluate("window.scrollTo(0, document.body.scrollHeight)")
-            await page.wait_for_timeout(2000)
-
-            scraped = await page.evaluate(_EVAL_JS)
-            scraped["product_url"] = page.url
-
-            title = scraped.get("title")
-            price_raw = scraped.get("price")
-            if title and price_raw:
-                scraped["scrap_status"] = "SUCCESS"
-            elif title or price_raw:
-                scraped["scrap_status"] = "PARTIAL"
-            else:
-                scraped["scrap_status"] = "EMPTY"
+            scraped = await on_page_loop(self._scrape_page(page))
         finally:
-            try:
-                await page.close()
-            except Exception:  # noqa: BLE001
-                pass
+            await close_page(page)
+
+        if scraped is None:  # page body never loaded
+            if url_attempt == 1:
+                yield self._next_url_request(record)
+            else:
+                yield self._timeout_item(record)
+            return
 
         price = parse_price(scraped.get("price"))
         item = ScrapedItem(
@@ -263,6 +248,30 @@ class MyntraSpider(scrapy.Spider):
             available_sizes=scraped.get("available_sizes"),
         )
         yield item
+
+    async def _scrape_page(self, page):
+        """Returns the scraped dict, or None if the page body never loaded."""
+        try:
+            await page.wait_for_selector("body", timeout=15000)
+        except Exception:  # noqa: BLE001
+            return None
+
+        await page.wait_for_timeout(3000)
+        await page.evaluate("window.scrollTo(0, document.body.scrollHeight)")
+        await page.wait_for_timeout(2000)
+
+        scraped = await page.evaluate(_EVAL_JS)
+        scraped["product_url"] = page.url
+
+        title = scraped.get("title")
+        price_raw = scraped.get("price")
+        if title and price_raw:
+            scraped["scrap_status"] = "SUCCESS"
+        elif title or price_raw:
+            scraped["scrap_status"] = "PARTIAL"
+        else:
+            scraped["scrap_status"] = "EMPTY"
+        return scraped
 
     def errback(self, failure):
         # Kept for contract-parity; Myntra's two url_attempt-specific errbacks above are used

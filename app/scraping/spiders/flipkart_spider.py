@@ -8,7 +8,14 @@ Playwright browser automation (JS execution + settle waits) rather than a plain 
 import scrapy
 
 from app.scraping.items import ScrapedItem
-from app.scraping.utils import base_result, parse_price, price_status
+from app.scraping.utils import (
+    base_result,
+    close_failed_page,
+    close_page,
+    on_page_loop,
+    parse_price,
+    price_status,
+)
 from app.services.job_store import job_store
 
 _EVAL_JS = r"""
@@ -350,6 +357,10 @@ class FlipkartSpider(scrapy.Spider):
                     "playwright": True,
                     "playwright_include_page": True,
                     "playwright_context": "default",
+                    # Don't wait for the full `load` event (trackers/ads keep it pending for
+                    # seconds, and it was the cause of Page.goto timeouts) — _extract() already
+                    # waits for the price to render before reading anything.
+                    "playwright_page_goto_kwargs": {"wait_until": "domcontentloaded"},
                 },
                 dont_filter=True,
             )
@@ -358,14 +369,11 @@ class FlipkartSpider(scrapy.Spider):
         record = response.meta["record"]
         page = response.meta["playwright_page"]
         try:
-            scraped = await self._extract(page)
+            scraped = await on_page_loop(self._extract(page))
         except Exception as exc:  # noqa: BLE001 — never let extraction errors escape to errback
             scraped = base_result(title="ERROR", scrap_status=str(exc))
         finally:
-            try:
-                await page.close()
-            except Exception:  # noqa: BLE001
-                pass
+            await close_page(page)
 
         price = parse_price(scraped.get("price"))
         item = ScrapedItem(
@@ -391,8 +399,12 @@ class FlipkartSpider(scrapy.Spider):
         yield item
 
     async def _extract(self, page):
+        # Only click the login popup's close button if it's actually there — click(timeout=...)
+        # on a missing element blocked for the full timeout on every product.
         try:
-            await page.locator("button._2KpZ6l._2doB4z").first.click(timeout=2000)
+            close_btn = page.locator("button._2KpZ6l._2doB4z").first
+            if await close_btn.count():
+                await close_btn.click(timeout=2000)
         except Exception:  # noqa: BLE001 — best-effort popup dismissal
             pass
 
@@ -413,7 +425,8 @@ class FlipkartSpider(scrapy.Spider):
         scraped["scrap_status"] = "SUCCESS" if (scraped.get("price") or scraped.get("title")) else "EMPTY"
         return scraped
 
-    def errback(self, failure):
+    async def errback(self, failure):
+        await close_failed_page(failure)
         record = failure.request.meta["record"]
         message = f"{self.name} {record.get('code')}: {failure.value}"
         self.logger.error(message)

@@ -109,6 +109,30 @@ class AmazonSpider(scrapy.Spider):
             return
 
         body = response.text
+        # Amazon's "soft" bot check: a 200 page with only a "Continue shopping" button that
+        # posts to /errors/validateCaptcha. Plain HTTP now gets it for most products, and it
+        # used to fall through to _extract() and silently record EMPTY rows. A real browser
+        # is served the actual PDP, so re-fetch through Playwright once before giving up. The
+        # rendered HTML comes back as an ordinary response, so _extract() is reused as-is.
+        if "validateCaptcha" in body and "productTitle" not in body:
+            if not response.meta.get("playwright"):
+                yield scrapy.Request(
+                    response.url,
+                    callback=self.parse,
+                    errback=self.errback,
+                    meta={
+                        "record": record,
+                        "retry_count": MAX_RETRIES,
+                        "playwright": True,
+                        "playwright_context": "default",
+                        "playwright_page_goto_kwargs": {"wait_until": "domcontentloaded"},
+                    },
+                    dont_filter=True,
+                )
+                return
+            yield self._yield_item(record, response, base_result(scrap_status="ERROR: Bot blocked (soft challenge page)"))
+            return
+
         if "Robot Check" in body or "Enter the characters" in body or "Sorry, we just need" in body:
             yield self._yield_item(record, response, base_result(scrap_status="ERROR: CAPTCHA detected"))
             return

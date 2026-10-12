@@ -19,11 +19,13 @@ SCRAPY_SETTINGS = {
     "ROBOTSTXT_OBEY": False,
     "TWISTED_REACTOR": "twisted.internet.asyncioreactor.AsyncioSelectorReactor",
     "LOG_LEVEL": "INFO",
-    # Node processes records one-at-a-time per job (a single shared browser page / http
-    # session) — keep the same effectively-sequential behaviour rather than Scrapy's usual
-    # high concurrency, so per-record delays behave the same way.
-    "CONCURRENT_REQUESTS": 1,
-    "CONCURRENT_REQUESTS_PER_DOMAIN": 1,
+    # Strictly one-at-a-time (the Node behaviour) spent most of each ~10s product page idle
+    # waiting on render settles, making a full sweep take hours. A few overlapping pages keep the
+    # crawl polite — each spider's DOWNLOAD_DELAY still spaces out request *starts* per domain —
+    # while cutting wall-clock time several-fold. Also sizes each browser context's page pool
+    # (PLAYWRIGHT_MAX_PAGES_PER_CONTEXT defaults to CONCURRENT_REQUESTS).
+    "CONCURRENT_REQUESTS": 4,
+    "CONCURRENT_REQUESTS_PER_DOMAIN": 4,
     "RETRY_ENABLED": True,
     "RETRY_TIMES": 2,
     "ITEM_PIPELINES": {

@@ -43,6 +43,16 @@ def ensure_reactor_installed() -> None:
         install_reactor("twisted.internet.asyncioreactor.AsyncioSelectorReactor")
     except twisted_error.ReactorAlreadyInstalledError:
         pass
+
+    # The asyncio loop is already being driven by uvicorn, so reactor.run() must never be called
+    # — but the reactor still has to be marked running, or its "startup" triggers never fire and
+    # the reactor threadpool (used for DNS resolution) is never started. Without this every
+    # plain-HTTP crawl (Snapdeal, Amazon) hangs forever at 0 pages; Playwright crawls only
+    # appeared to work because they do their own networking on a separate thread.
+    from twisted.internet import reactor
+
+    if not reactor.running:
+        reactor.startRunning(installSignalHandlers=False)
     _reactor_ready = True
 
 

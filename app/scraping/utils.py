@@ -80,6 +80,43 @@ _ABORT_RESOURCE_TYPES = {"image", "media", "font"}
 _ABORT_URL_SUBSTRINGS = (".m4s", "transcode-video", "/vod1.", "/vod2.")
 
 
+async def on_page_loop(coro):
+    """Awaits a coroutine that drives a Playwright page, on the loop that page belongs to.
+
+    On Windows scrapy-playwright runs Playwright on its own ProactorEventLoop in a separate
+    thread (Scrapy's reactor needs a selector loop), yet hands the page object straight to spider
+    callbacks, which run on Scrapy's loop. Calling page methods across threads like that is not
+    thread-safe: it corrupts Playwright's driver pipe (`assert f is self._write_fut` in
+    `_ProactorBaseWritePipeTransport`, after which the crawl can stall for good) and serializes
+    every page interaction, so CONCURRENT_REQUESTS > 1 buys nothing. Everywhere else Playwright
+    shares Scrapy's loop and the coroutine is simply awaited.
+    """
+    # Private scrapy-playwright API — the only handle on its Windows loop thread.
+    from scrapy_playwright._loop import _ThreadedLoopAdapter
+
+    if getattr(_ThreadedLoopAdapter, "_loop", None) is not None:
+        return await _ThreadedLoopAdapter._future_from_coro(coro)
+    return await coro
+
+
+async def close_page(page) -> None:
+    try:
+        await on_page_loop(page.close())
+    except Exception:  # noqa: BLE001 — page/browser may already be gone
+        pass
+
+
+async def close_failed_page(failure) -> None:
+    """Every errback of a `playwright_include_page` request must call this. scrapy-playwright
+    hands the page to the spider and never closes it itself when navigation fails (e.g.
+    `Page.goto` timeout), and each open page holds one slot of the context's page semaphore
+    (sized to CONCURRENT_REQUESTS) — so leaked pages silently wedge the whole crawl.
+    """
+    page = failure.request.meta.get("playwright_page")
+    if page is not None:
+        await close_page(page)
+
+
 def should_abort_request(request) -> bool:
     if request.resource_type in _ABORT_RESOURCE_TYPES:
         return True

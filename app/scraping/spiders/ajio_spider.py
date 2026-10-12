@@ -8,7 +8,14 @@ the shared Playwright context) rather than a simple GET.
 import scrapy
 
 from app.scraping.items import ScrapedItem
-from app.scraping.utils import base_result, parse_price, price_status
+from app.scraping.utils import (
+    base_result,
+    close_failed_page,
+    close_page,
+    on_page_loop,
+    parse_price,
+    price_status,
+)
 from app.services.job_store import job_store
 
 _EVAL_JS = r"""
@@ -255,41 +262,34 @@ class AjioSpider(scrapy.Spider):
     async def parse(self, response):
         record = response.meta["record"]
         page = response.meta["playwright_page"]
-        code = record.get("code")
+        try:
+            scraped = await on_page_loop(self._scrape_page(page, record.get("code")))
+        finally:
+            await close_page(page)
 
+        yield self._build_item(record, response, scraped)
+
+    async def _scrape_page(self, page, code):
         try:
             await page.wait_for_timeout(3000)
             await page.evaluate("window.scrollTo(0, document.body.scrollHeight/2)")
             await page.wait_for_timeout(1500)
         except Exception as exc:  # noqa: BLE001 — handled failure, not an errback case
-            try:
-                await page.close()
-            except Exception:  # noqa: BLE001
-                pass
             self.logger.warning("%s %s: page load timeout (%s)", self.name, code, exc)
-            scraped = base_result(scrap_status="ERROR: Page load timeout")
-            yield self._build_item(record, response, scraped)
-            return
+            return base_result(scrap_status="ERROR: Page load timeout")
 
-        try:
-            scraped = await page.evaluate(_EVAL_JS, code)
-            scraped["product_url"] = page.url
+        scraped = await page.evaluate(_EVAL_JS, code)
+        scraped["product_url"] = page.url
 
-            title = scraped.get("title")
-            price_raw = scraped.get("price")
-            if title and price_raw:
-                scraped["scrap_status"] = "SUCCESS"
-            elif title or price_raw:
-                scraped["scrap_status"] = "PARTIAL"
-            else:
-                scraped["scrap_status"] = "EMPTY"
-        finally:
-            try:
-                await page.close()
-            except Exception:  # noqa: BLE001
-                pass
-
-        yield self._build_item(record, response, scraped)
+        title = scraped.get("title")
+        price_raw = scraped.get("price")
+        if title and price_raw:
+            scraped["scrap_status"] = "SUCCESS"
+        elif title or price_raw:
+            scraped["scrap_status"] = "PARTIAL"
+        else:
+            scraped["scrap_status"] = "EMPTY"
+        return scraped
 
     def _build_item(self, record, response, scraped):
         price = parse_price(scraped.get("price"))
@@ -314,7 +314,8 @@ class AjioSpider(scrapy.Spider):
             available_sizes=scraped.get("available_sizes"),
         )
 
-    def errback(self, failure):
+    async def errback(self, failure):
+        await close_failed_page(failure)
         record = failure.request.meta["record"]
         message = f"{self.name} {record.get('code')}: {failure.value}"
         self.logger.error(message)
