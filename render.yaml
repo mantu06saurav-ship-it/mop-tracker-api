@@ -32,4 +32,19 @@ services:
       - key: SMTP_FROM_NAME
         value: "MOP Tracker"
       - key: CORS_ORIGINS
-        sync: false
+        fromService:
+          type: web
+          name: mop-tracker-web
+          envVarKey: RENDER_EXTERNAL_URL
+  - type: web
+    name: mop-tracker-web
+    runtime: node
+    rootDir: mop-tracker-web
+    buildCommand: npm ci && npm run build
+    startCommand: npm start
+    envVars:
+      - key: NEXT_PUBLIC_API_URL
+        fromService:
+          type: web
+          name: mop-tracker-api
+          envVarKey: RENDER_EXTERNAL_URL

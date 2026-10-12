@@ -9,5 +9,10 @@ uploads/avatars/*
 .pytest_cache/
 scrapy.cfg.local
 
-# Frontend lives in its own separate repo/deployment — never tracked from here.
-mop-tracker-web/
+# Frontend source is tracked in this repo; ignore local build output and secrets.
+mop-tracker-web/node_modules/
+mop-tracker-web/.next/
+mop-tracker-web/.env.local
+mop-tracker-web/.env.*.local
+mop-tracker-web/.vercel/
+mop-tracker-web/tsconfig.tsbuildinfo

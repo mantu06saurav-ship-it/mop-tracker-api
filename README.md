@@ -1,7 +1,8 @@
 # MOP Tracker API (Python / FastAPI)
 
-A from-scratch Python port of the Node.js `MOP_TRACKER` app, built for a **Next.js** frontend
-(this repo is API-only — no server-rendered pages). It reads/writes the **same MSSQL database**
+A from-scratch Python port of the Node.js `MOP_TRACKER` app, paired with the **Next.js** frontend
+in `mop-tracker-web/`. The FastAPI service is API-only; the frontend is deployed as a separate
+web service from this same repository. The API reads/writes the **same MSSQL database**
 (`dbo.mop_data`, `dbo.mop_tracker`, `dbo.Users`, etc.) as the Node app, so both can point at the
 same server during a transition, though **the two apps do not share the in-memory scrape-job
 state** (each process tracks its own jobs).
@@ -78,10 +79,16 @@ The configurable daily auto-scrape sweep and a per-minute daily-email check run 
 editable by a Super Admin under Manage Users â†’ Auto-Scrape, and use Asia/Kolkata time. A new
 installation keeps the existing default schedule of 00:00, 06:00, 12:00, and 18:00 IST.
 
+## Deploy on Render
+
+The root `render.yaml` defines both services. The API builds with Docker to install Microsoft's
+SQL Server ODBC driver; the Next.js service uses `mop-tracker-web/` as its root directory. The
+Blueprint wires `NEXT_PUBLIC_API_URL` to the API's public URL and allows the frontend URL through
+the API's CORS setting. Sync the Blueprint after pushing changes to create or update both services.
+
 ## Deliberate differences from the Node app
 
-- **No server-rendered pages.** The Node app served `pages/*.html`; this backend is API-only —
-  build the UI in Next.js against these same endpoints.
+- **The API does not serve pages.** The Next.js interface lives in `mop-tracker-web/` and runs as a separate web service from this repository.
 - **No hardcoded credential fallbacks.** The Node app's `DB_CONFIG`/`SMTP_CONFIG` defaulted to
   real production values baked into `server.js` if env vars were unset. This app requires every
   secret (`JWT_SECRET`, `DB_*`, `SMTP_*`) to be set via `.env` — it will fail to start otherwise.
