@@ -73,7 +73,7 @@ function EmailAutomationForm({ data }: { data: EmailSettingsResponse }) {
   const delivery = parseDelivery(data.settings.last_delivery);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">

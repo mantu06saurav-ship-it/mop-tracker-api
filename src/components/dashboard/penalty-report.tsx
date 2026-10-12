@@ -164,8 +164,8 @@ export function PenaltyReport({
           </div>
         ) : belowRows.length === 0 ? (
           <div className="flex flex-col items-center gap-2 py-10 text-center">
-            <PartyPopper className="size-8 text-success-foreground" />
-            <p className="font-medium text-success-foreground">No SKUs are below MOP — zero penalty exposure right now.</p>
+            <PartyPopper className="size-8 text-success" />
+            <p className="font-medium text-success">No SKUs are below MOP — zero penalty exposure right now.</p>
           </div>
         ) : (
           <div className="overflow-x-auto rounded-lg border">

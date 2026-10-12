@@ -51,7 +51,7 @@ function VerticalCard({
 }) {
   return (
     <Card
-      className="cursor-pointer gap-3 transition-shadow hover:shadow-md"
+      className="group cursor-pointer gap-3 border border-border/70 bg-gradient-to-br from-card to-card/95 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-primary/5"
       role="button"
       tabIndex={0}
       onClick={onSelect}
@@ -59,19 +59,20 @@ function VerticalCard({
         if (e.key === "Enter" || e.key === " ") onSelect();
       }}
     >
-      <CardHeader className="flex-row items-center justify-between">
+      <CardHeader className="flex-row items-center justify-between gap-2 pb-2">
         <div className="flex items-center gap-2.5">
-          <div className="flex size-9 items-center justify-center rounded-lg bg-primary/10 text-primary">
+          <div className="flex size-10 items-center justify-center rounded-xl bg-primary/10 text-primary ring-1 ring-primary/10">
             <Icon className="size-4.5" />
           </div>
           <div>
-            <CardTitle>{title}</CardTitle>
-            <p className="text-xs text-muted-foreground">{subtitle}</p>
+            <CardTitle className="text-base font-semibold tracking-tight">{title}</CardTitle>
+            <p className="text-[11px] text-muted-foreground">{subtitle}</p>
           </div>
         </div>
         <Button
           variant="ghost"
-          size="icon-sm"
+          size="icon"
+          className="size-8 text-muted-foreground hover:text-foreground"
           onClick={(e) => {
             e.stopPropagation();
             exportVertical(stats);
@@ -81,34 +82,34 @@ function VerticalCard({
           <Download className="size-4" />
         </Button>
       </CardHeader>
-      <CardContent>
+      <CardContent className="pt-0">
         <div className="grid grid-cols-4 gap-2 text-center">
-          <div>
+          <div className="rounded-xl bg-muted/50 px-2 py-2.5">
             <p className="text-lg font-semibold tabular-nums">{formatNumber(stats.total)}</p>
             <p className="text-[11px] text-muted-foreground">Total</p>
           </div>
-          <div>
+          <div className="rounded-xl bg-muted/50 px-2 py-2.5">
             <p className="text-lg font-semibold tabular-nums text-destructive">{formatNumber(stats.below)}</p>
             <p className="text-[11px] text-muted-foreground">Below</p>
           </div>
-          <div>
-            <p className="text-lg font-semibold tabular-nums text-warning-foreground">{formatNumber(stats.at)}</p>
+          <div className="rounded-xl bg-muted/50 px-2 py-2.5">
+            <p className="text-lg font-semibold tabular-nums text-warning">{formatNumber(stats.at)}</p>
             <p className="text-[11px] text-muted-foreground">At</p>
           </div>
-          <div>
-            <p className="text-lg font-semibold tabular-nums text-success-foreground">{formatNumber(stats.above)}</p>
+          <div className="rounded-xl bg-muted/50 px-2 py-2.5">
+            <p className="text-lg font-semibold tabular-nums text-success">{formatNumber(stats.above)}</p>
             <p className="text-[11px] text-muted-foreground">Above</p>
           </div>
         </div>
-        <div className="mt-3 flex items-center justify-between rounded-lg bg-muted/50 px-3 py-2">
-          <span className="text-xs text-muted-foreground">Compliance</span>
+        <div className="mt-3 flex items-center justify-between rounded-xl bg-muted/55 px-3 py-2.5">
+          <span className="text-xs font-medium text-muted-foreground">Compliance</span>
           <span
             className={cn(
-              "text-sm font-semibold tabular-nums",
+              "text-sm font-bold tabular-nums",
               stats.compliancePct >= 80
-                ? "text-success-foreground"
+                ? "text-success"
                 : stats.compliancePct >= 50
-                  ? "text-warning-foreground"
+                  ? "text-warning"
                   : "text-destructive"
             )}
           >
@@ -132,8 +133,8 @@ export function VerticalCards({
   if (loading) {
     return (
       <div className="grid gap-3 sm:grid-cols-2">
-        <Skeleton className="h-40 w-full rounded-xl" />
-        <Skeleton className="h-40 w-full rounded-xl" />
+        <Skeleton className="h-44 w-full rounded-2xl" />
+        <Skeleton className="h-44 w-full rounded-2xl" />
       </div>
     );
   }

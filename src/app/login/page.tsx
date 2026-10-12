@@ -66,7 +66,7 @@ export default function LoginPage() {
 
   return (
     <div className="grid min-h-screen w-full lg:grid-cols-2">
-      <div className="relative hidden flex-col justify-between overflow-hidden bg-gradient-to-br from-primary via-primary to-info p-10 text-primary-foreground lg:flex">
+      <div className="relative hidden flex-col justify-between overflow-hidden bg-gradient-to-br from-[oklch(0.52_0.19_260)] via-[oklch(0.48_0.19_255)] to-[oklch(0.6_0.14_230)] p-10 text-white lg:flex">
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,_rgba(255,255,255,0.15),_transparent_55%)]" />
         <div className="relative flex items-center gap-2">
           <div className="flex size-10 items-center justify-center rounded-xl bg-white/15 backdrop-blur">
@@ -75,17 +75,17 @@ export default function LoginPage() {
           <span className="text-lg font-semibold">MOP Tracker</span>
         </div>
 
-        <div className="relative space-y-6">
-          <h1 className="text-4xl font-semibold leading-tight text-balance">
+        <div className="relative space-y-4">
+          <h1 className="text-3xl font-semibold leading-tight text-balance">
             Marketplace price compliance, watched around the clock.
           </h1>
-          <p className="max-w-md text-primary-foreground/80">
+          <p className="max-w-md text-white/80">
             Track MOP breaches, listing accuracy, and seller performance across every marketplace from a
             single console.
           </p>
           <ul className="space-y-3 pt-2">
             {FEATURES.map(({ icon: Icon, text }) => (
-              <li key={text} className="flex items-start gap-3 text-sm text-primary-foreground/90">
+              <li key={text} className="flex items-start gap-3 text-sm text-white/90">
                 <span className="mt-0.5 flex size-6 shrink-0 items-center justify-center rounded-full bg-white/15">
                   <Icon className="size-3.5" />
                 </span>
@@ -95,10 +95,10 @@ export default function LoginPage() {
           </ul>
         </div>
 
-        <p className="relative text-xs text-primary-foreground/60">© {new Date().getFullYear()} Liberty Shoes Limited</p>
+        <p className="relative text-xs text-white/60">© {new Date().getFullYear()} Liberty Shoes Limited</p>
       </div>
 
-      <div className="flex flex-col justify-center px-6 py-12 sm:px-12 lg:px-16">
+      <div className="flex flex-col justify-center px-6 py-10 sm:px-10 lg:px-12">
         <div className="mb-8 flex items-center justify-between lg:hidden">
           <div className="flex items-center gap-2">
             <div className="flex size-9 items-center justify-center rounded-xl bg-primary text-primary-foreground">
@@ -115,8 +115,8 @@ export default function LoginPage() {
         <div className="mx-auto w-full max-w-sm">
           <Card className="border-none shadow-none lg:border lg:shadow-sm">
             <CardContent className="pt-2">
-              <div className="mb-6">
-                <h2 className="text-2xl font-semibold tracking-tight">Welcome back</h2>
+              <div className="mb-4">
+                <h2 className="text-xl font-semibold tracking-tight">Welcome back</h2>
                 <p className="mt-1 text-sm text-muted-foreground">Sign in to your MOP Tracker account.</p>
               </div>
 

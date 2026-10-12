@@ -31,10 +31,21 @@ apiClient.interceptors.response.use(
   }
 );
 
+// FastAPI's own 422 validation-error responses send `detail` as an array of these — not the
+// plain string our own HTTPException(detail="...") calls send — so it has to be normalized to
+// text before it can ever reach React state/JSX, or "Objects are not valid as a React child".
+interface ValidationErrorItem {
+  msg?: string;
+}
+
 export function apiErrorMessage(error: unknown, fallback = "Something went wrong."): string {
   if (axios.isAxiosError(error)) {
-    const detail = (error.response?.data as { detail?: string } | undefined)?.detail;
-    if (detail) return detail;
+    const detail = (error.response?.data as { detail?: string | ValidationErrorItem[] } | undefined)?.detail;
+    if (typeof detail === "string" && detail) return detail;
+    if (Array.isArray(detail) && detail.length > 0) {
+      const msg = detail.map((d) => d.msg).filter(Boolean).join(" ");
+      if (msg) return msg;
+    }
     if (error.message) return error.message;
   }
   if (error instanceof Error) return error.message;

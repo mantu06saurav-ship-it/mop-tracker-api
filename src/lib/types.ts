@@ -131,6 +131,18 @@ export interface EmailSettingsResponse {
   timezone: string;
 }
 
+export interface ScrapeSchedule {
+  enabled: boolean;
+  times: string[];
+  updated_by: string | null;
+  updated_at: string | null;
+}
+
+export interface ScrapeScheduleResponse {
+  schedule: ScrapeSchedule;
+  timezone: string;
+}
+
 export interface InventoryRow {
   id: number;
   inventory_type: string | null;

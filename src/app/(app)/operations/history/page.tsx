@@ -45,7 +45,7 @@ function HistoryContent() {
       )}
 
       {!isLoading && !isError && (!batches || batches.length === 0) && (
-        <div className="flex flex-col items-center justify-center gap-2 rounded-xl border border-dashed px-6 py-16 text-center text-muted-foreground">
+        <div className="flex flex-col items-center justify-center gap-2 rounded-xl border border-dashed px-6 py-10 text-center text-muted-foreground">
           <Inbox className="size-6" />
           <p className="text-sm">No scrape batches yet.</p>
         </div>

@@ -5,13 +5,14 @@ import type { Summary } from "@/lib/types";
 
 export function KpiCards({ summary, loading }: { summary: Summary | undefined; loading: boolean }) {
   return (
-    <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
+    <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-5">
       <StatCard
         label="Total SKUs"
         value={formatNumber(summary?.total)}
         icon={ListChecks}
         tone="default"
         loading={loading}
+        hint="Tracked products"
       />
       <StatCard
         label="Below MOP"
@@ -19,6 +20,7 @@ export function KpiCards({ summary, loading }: { summary: Summary | undefined; l
         icon={TrendingDown}
         tone="danger"
         loading={loading}
+        hint="Price gap risk"
       />
       <StatCard
         label="At MOP"
@@ -26,6 +28,7 @@ export function KpiCards({ summary, loading }: { summary: Summary | undefined; l
         icon={CircleGauge}
         tone="warning"
         loading={loading}
+        hint="Healthy parity"
       />
       <StatCard
         label="Above MOP"
@@ -33,6 +36,7 @@ export function KpiCards({ summary, loading }: { summary: Summary | undefined; l
         icon={CheckCircle2}
         tone="success"
         loading={loading}
+        hint="Premium pricing"
       />
       <StatCard
         label="Compliance %"
@@ -40,6 +44,7 @@ export function KpiCards({ summary, loading }: { summary: Summary | undefined; l
         icon={ShieldAlert}
         tone="info"
         loading={loading}
+        hint="Overall score"
       />
     </div>
   );

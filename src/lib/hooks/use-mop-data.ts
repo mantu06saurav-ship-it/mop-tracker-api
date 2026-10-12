@@ -28,3 +28,10 @@ export function useRunScrapeJob() {
       (await apiClient.post<{ job_id: string; total: number }>(`/run-from-db`, null, { params: { portal } })).data,
   });
 }
+
+export function useRunAllPortalsScrapeJob() {
+  return useMutation({
+    mutationFn: async () =>
+      (await apiClient.post<{ job_id: string; total: number; portals: string[] }>(`/run-from-db-all`)).data,
+  });
+}

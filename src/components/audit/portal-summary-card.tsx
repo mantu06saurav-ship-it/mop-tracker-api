@@ -57,7 +57,7 @@ export function PortalSummaryCard({ rows, loading }: { rows: PortalSummaryRow[];
                   <TableCell className="font-medium capitalize">{row.portal}</TableCell>
                   <TableCell className="text-right tabular-nums">{row.audited}</TableCell>
                   <TableCell className="text-right tabular-nums text-destructive">{row.fails}</TableCell>
-                  <TableCell className="text-right tabular-nums text-success-foreground">{row.pass}</TableCell>
+                  <TableCell className="text-right tabular-nums text-success">{row.pass}</TableCell>
                   <TableCell className="text-right tabular-nums font-medium">{row.passPct}%</TableCell>
                 </TableRow>
               ))}

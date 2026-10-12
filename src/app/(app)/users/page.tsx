@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
-import { Mail, ShieldCheck, UserCheck, UserX, Users as UsersIcon } from "lucide-react";
+import { CalendarClock, Mail, ShieldCheck, UserCheck, UserX, Users as UsersIcon } from "lucide-react";
 import { PageHeader } from "@/components/shared/page-header";
 import { StatCard } from "@/components/shared/stat-card";
 import { RequireAuth } from "@/components/shared/require-auth";
@@ -9,6 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AddUserDialog } from "@/components/users/add-user-dialog";
 import { TeamDirectory } from "@/components/users/team-directory";
 import { EmailAutomation } from "@/components/users/email-automation";
+import { AutoScrapeSchedule } from "@/components/users/auto-scrape-schedule";
 import { useUsers } from "@/lib/hooks/use-users";
 
 function UsersPageContent() {
@@ -28,7 +29,7 @@ function UsersPageContent() {
     <div>
       <PageHeader
         title="Manage Users"
-        description="Team directory, roles, and daily email automation."
+        description="Team access, email automation, and the automatic scrape schedule."
         actions={<AddUserDialog users={users ?? []} />}
       />
 
@@ -46,12 +47,19 @@ function UsersPageContent() {
             <Mail className="size-3.5" />
             Email Automation
           </TabsTrigger>
+          <TabsTrigger value="scrape-schedule">
+            <CalendarClock className="size-3.5" />
+            Auto-Scrape
+          </TabsTrigger>
         </TabsList>
         <TabsContent value="directory" className="mt-4">
           <TeamDirectory users={users ?? []} />
         </TabsContent>
         <TabsContent value="email" className="mt-4">
           <EmailAutomation />
+        </TabsContent>
+        <TabsContent value="scrape-schedule" className="mt-4">
+          <AutoScrapeSchedule />
         </TabsContent>
       </Tabs>
     </div>

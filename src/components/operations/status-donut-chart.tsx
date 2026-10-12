@@ -61,7 +61,7 @@ export function StatusDonutChart({ summary }: { summary: Summary | undefined }) 
               </PieChart>
             </ResponsiveContainer>
             <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
-              <p className="text-2xl font-semibold tabular-nums">{summary?.compliance_pct.toFixed(1) ?? "0.0"}%</p>
+              <p className="text-xl font-semibold tabular-nums">{summary?.compliance_pct.toFixed(1) ?? "0.0"}%</p>
               <p className="text-xs text-muted-foreground">Compliance</p>
             </div>
             <div className="mt-2 flex flex-wrap items-center justify-center gap-x-4 gap-y-1">

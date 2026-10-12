@@ -31,9 +31,9 @@ function ProfilePageContent() {
   return (
     <div>
       <PageHeader title="My Profile" description="Your account details and security settings." />
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[320px_1fr]">
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-[280px_1fr]">
         <AvatarCard user={user} loading={stillLoading} />
-        <div className="space-y-6">
+        <div className="space-y-4">
           <EmployeeDetailsCard user={user} loading={stillLoading} />
           <ChangePasswordCard />
         </div>

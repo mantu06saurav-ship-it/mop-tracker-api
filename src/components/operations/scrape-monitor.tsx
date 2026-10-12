@@ -20,7 +20,7 @@ function StatChip({ label, value }: { label: string; value: number | string }) {
 export function ScrapeMonitor({ state }: { state: JobPollState }) {
   if (state.phase === "idle") {
     return (
-      <div className="flex flex-col items-center justify-center gap-2 rounded-xl border border-dashed px-6 py-12 text-center text-muted-foreground">
+      <div className="flex flex-col items-center justify-center gap-2 rounded-xl border border-dashed px-6 py-8 text-center text-muted-foreground">
         <RadioTower className="size-6" />
         <p className="text-sm">Start a scrape above to see live progress here.</p>
       </div>
@@ -43,7 +43,7 @@ export function ScrapeMonitor({ state }: { state: JobPollState }) {
         </div>
         <Progress value={percent} />
         {state.note && (
-          <p className="flex items-center gap-1.5 text-xs text-warning-foreground">
+          <p className="flex items-center gap-1.5 text-xs text-warning">
             <AlertTriangle className="size-3.5" />
             {state.note}
           </p>
@@ -63,7 +63,7 @@ export function ScrapeMonitor({ state }: { state: JobPollState }) {
     const job = state.job;
     return (
       <div className="space-y-4">
-        <div className="flex items-center gap-2 rounded-xl border border-success/30 bg-success/10 px-4 py-3 text-success-foreground">
+        <div className="flex items-center gap-2 rounded-xl border border-success/30 bg-success/10 px-4 py-3 text-success">
           <CheckCircle2 className="size-4.5 shrink-0" />
           <div>
             <p className="text-sm font-medium">Scrape complete</p>
@@ -104,7 +104,7 @@ export function ScrapeMonitor({ state }: { state: JobPollState }) {
 
   if (state.phase === "interrupted") {
     return (
-      <div className="space-y-2 rounded-xl border border-warning/40 bg-warning/10 px-4 py-3 text-warning-foreground">
+      <div className="space-y-2 rounded-xl border border-warning/40 bg-warning/10 px-4 py-3 text-warning">
         <div className="flex items-center gap-2">
           <PlugZap className="size-4.5 shrink-0" />
           <p className="text-sm font-medium">Connection interrupted</p>
@@ -149,8 +149,10 @@ function ResultsTable({ rows }: { rows: TrackerRow[] }) {
           </TableRow>
         </TableHeader>
         <TableBody>
-          {ordered.map((row) => (
-            <TableRow key={row.id}>
+          {/* Live job rows are raw scrape results with no DB id (the insert may even have failed), but
+              the API only ever appends — so the original index is a stable key. */}
+          {ordered.map((row, i) => (
+            <TableRow key={rows.length - 1 - i}>
               <TableCell className="font-medium">{row.code}</TableCell>
               <TableCell className="tabular-nums">{formatINR(row.price_scraped)}</TableCell>
               <TableCell className="tabular-nums">{formatINR(row.mop)}</TableCell>

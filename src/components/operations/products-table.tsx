@@ -220,7 +220,7 @@ export function ProductsTable({ rows }: { rows: TrackerRow[] }) {
                       <div className="flex items-center gap-1.5">
                         {formatINR(row.price_scraped)}
                         {delta !== null && delta !== 0 && (
-                          <span className={delta < 0 ? "text-xs text-destructive" : "text-xs text-success-foreground"}>
+                          <span className={delta < 0 ? "text-xs text-destructive" : "text-xs text-success"}>
                             ({delta > 0 ? "+" : ""}
                             {formatINR(delta)})
                           </span>

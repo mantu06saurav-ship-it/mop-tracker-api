@@ -2,7 +2,7 @@ import { cn } from "@/lib/utils";
 import type { AuditFieldRow } from "@/lib/types";
 
 const REMARK_CLASSES: Record<AuditFieldRow["remark"], string> = {
-  OK: "bg-success/15 text-success-foreground border-success/30 dark:bg-success/20",
+  OK: "bg-success/15 text-success border-success/30 dark:bg-success/20",
   NOT_OK: "bg-destructive/15 text-destructive border-destructive/30 dark:bg-destructive/20",
   "--": "bg-muted text-muted-foreground border-border",
 };

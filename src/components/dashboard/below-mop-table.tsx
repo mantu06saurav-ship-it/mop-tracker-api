@@ -153,8 +153,8 @@ export function BelowMopTable({
           </div>
         ) : allGroups.length === 0 ? (
           <div className="flex flex-col items-center gap-2 py-10 text-center">
-            <PartyPopper className="size-8 text-success-foreground" />
-            <p className="font-medium text-success-foreground">No SKUs below MOP — every listing is compliant.</p>
+            <PartyPopper className="size-8 text-success" />
+            <p className="font-medium text-success">No SKUs below MOP — every listing is compliant.</p>
           </div>
         ) : filteredGroups.length === 0 ? (
           <p className="py-10 text-center text-sm text-muted-foreground">No SKUs match your filters.</p>
@@ -210,16 +210,8 @@ export function BelowMopTable({
                           <TableCell className={cn("border-l tabular-nums", !r && "text-muted-foreground")}>
                             {r ? formatINR(r.mop) : "—"}
                           </TableCell>
-                          <TableCell className="tabular-nums">
-                            {r ? (
-                              below ? (
-                                <Badge variant="destructive">{formatINR(r.price_scraped)}</Badge>
-                              ) : (
-                                formatINR(r.price_scraped)
-                              )
-                            ) : (
-                              <span className="text-muted-foreground">—</span>
-                            )}
+                          <TableCell className={cn("tabular-nums", below && "font-semibold text-destructive", !r && "text-muted-foreground")}>
+                            {r ? formatINR(r.price_scraped) : "—"}
                           </TableCell>
                           <TableCell className="max-w-32 truncate" title={r?.seller ?? undefined}>
                             {r?.seller ?? "—"}

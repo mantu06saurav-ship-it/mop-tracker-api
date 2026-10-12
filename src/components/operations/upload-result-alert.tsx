@@ -12,7 +12,7 @@ export function UploadResultAlert({ result }: { result: UploadResult }) {
   ];
   return (
     <div className="rounded-xl border border-success/30 bg-success/10 p-4">
-      <div className="mb-3 flex items-center gap-2 text-success-foreground">
+      <div className="mb-3 flex items-center gap-2 text-success">
         <CheckCircle2 className="size-4" />
         <p className="text-sm font-medium">Upload complete</p>
       </div>

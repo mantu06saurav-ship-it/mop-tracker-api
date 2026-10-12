@@ -24,7 +24,7 @@ export function BoolBadge({ ok, okLabel = "Active", badLabel = "Inactive" }: { o
       className={cn(
         "inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-medium",
         ok
-          ? "bg-success/15 text-success-foreground border-success/30 dark:bg-success/20"
+          ? "bg-success/15 text-success border-success/30 dark:bg-success/20"
           : "bg-destructive/15 text-destructive border-destructive/30"
       )}
     >

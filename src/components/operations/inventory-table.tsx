@@ -27,7 +27,7 @@ function StatusPill({ status }: { status: string | null }) {
     <span
       className={cn(
         "inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-medium whitespace-nowrap",
-        tone === "success" && "bg-success/15 text-success-foreground border-success/30",
+        tone === "success" && "bg-success/15 text-success border-success/30",
         tone === "destructive" && "bg-destructive/15 text-destructive border-destructive/30",
         tone === "muted" && "bg-muted text-muted-foreground border-border"
       )}

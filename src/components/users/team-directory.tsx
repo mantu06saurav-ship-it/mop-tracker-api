@@ -99,8 +99,8 @@ export function TeamDirectory({ users }: { users: User[] }) {
       </div>
 
       {filtered.length === 0 ? (
-        <div className="flex flex-col items-center justify-center gap-2 rounded-xl border border-dashed py-16 text-center">
-          <UsersIcon className="size-8 text-muted-foreground" />
+        <div className="flex flex-col items-center justify-center gap-2 rounded-xl border border-dashed py-10 text-center">
+          <UsersIcon className="size-7 text-muted-foreground" />
           {users.length === 0 ? (
             <>
               <p className="font-medium">Your team starts here</p>

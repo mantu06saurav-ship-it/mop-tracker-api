@@ -16,7 +16,7 @@ import { FileDropZone } from "@/components/operations/file-drop-zone";
 import { UploadResultAlert } from "@/components/operations/upload-result-alert";
 import { StepStrip } from "@/components/operations/step-strip";
 import { ScrapeMonitor } from "@/components/operations/scrape-monitor";
-import { useUploadMopData, useRunScrapeJob, type UploadResult } from "@/lib/hooks/use-mop-data";
+import { useUploadMopData, useRunScrapeJob, useRunAllPortalsScrapeJob, type UploadResult } from "@/lib/hooks/use-mop-data";
 import { useJobPolling } from "@/lib/hooks/use-job";
 import { apiErrorMessage } from "@/lib/api-client";
 import { PORTALS } from "@/lib/types";
@@ -35,8 +35,9 @@ function UploadAndScrape() {
   const uploadMutation = useUploadMopData();
 
   // Step 2 — scrape
-  const [portal, setPortal] = useState<string>(PORTALS[0]);
+  const [portal, setPortal] = useState<string>("all");
   const runScrapeMutation = useRunScrapeJob();
+  const runAllScrapeMutation = useRunAllPortalsScrapeJob();
   const jobPolling = useJobPolling();
 
   async function handleUpload() {
@@ -54,12 +55,15 @@ function UploadAndScrape() {
 
   async function handleStartScrape() {
     try {
-      const { job_id } = await runScrapeMutation.mutateAsync(portal);
+      const { job_id } =
+        portal === "all" ? await runAllScrapeMutation.mutateAsync() : await runScrapeMutation.mutateAsync(portal);
       jobPolling.start(job_id);
     } catch (err) {
       toast.error(apiErrorMessage(err, "Could not start the scrape job."));
     }
   }
+
+  const isStartingScrape = runScrapeMutation.isPending || runAllScrapeMutation.isPending;
 
   // Fire the dashboard refresh + toast exactly once when a job completes.
   const lastNotifiedRef = useRef<string | null>(null);
@@ -139,7 +143,7 @@ function UploadAndScrape() {
             <CardTitle className="flex items-center gap-2">
               <PlayCircle className="size-4" /> Step 2 · Run scraping
             </CardTitle>
-            <CardDescription>Runs against every saved product for the chosen marketplace — no upload required here.</CardDescription>
+            <CardDescription>Runs against every saved product for the chosen marketplace (or all of them) — no upload required here.</CardDescription>
           </CardHeader>
           <CardContent className="flex flex-col gap-3 sm:flex-row sm:items-center">
             <Select value={portal} onValueChange={setPortal}>
@@ -147,6 +151,7 @@ function UploadAndScrape() {
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
+                <SelectItem value="all">All portals</SelectItem>
                 {PORTALS.map((p) => (
                   <SelectItem key={p} value={p}>
                     {p[0].toUpperCase() + p.slice(1)}
@@ -154,13 +159,8 @@ function UploadAndScrape() {
                 ))}
               </SelectContent>
             </Select>
-            <Button
-              onClick={handleStartScrape}
-              disabled={runScrapeMutation.isPending || jobPolling.state.phase === "polling"}
-            >
-              {(runScrapeMutation.isPending || jobPolling.state.phase === "polling") && (
-                <Loader2 className="size-3.5 animate-spin" />
-              )}
+            <Button onClick={handleStartScrape} disabled={isStartingScrape || jobPolling.state.phase === "polling"}>
+              {(isStartingScrape || jobPolling.state.phase === "polling") && <Loader2 className="size-3.5 animate-spin" />}
               Start scraping
             </Button>
           </CardContent>

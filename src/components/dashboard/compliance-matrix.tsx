@@ -322,7 +322,7 @@ export function ComplianceMatrix({
             <Skeleton className="h-9 w-full" />
           </div>
         ) : groups.length === 0 ? (
-          <p className="py-8 text-center text-sm text-muted-foreground">No rows match the current filters.</p>
+          <p className="py-6 text-center text-sm text-muted-foreground">No rows match the current filters.</p>
         ) : (
           <div className="overflow-x-auto rounded-lg border">
             <Table>
@@ -413,7 +413,7 @@ export function ComplianceMatrix({
               <TableBody>
                 {leafRows.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={11} className="py-8 text-center text-muted-foreground">
+                    <TableCell colSpan={11} className="py-6 text-center text-muted-foreground">
                       No rows match your search.
                     </TableCell>
                   </TableRow>

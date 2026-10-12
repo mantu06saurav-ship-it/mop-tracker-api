@@ -139,7 +139,7 @@ export function AddUserDialog({ users }: { users: User[] }) {
           <>
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2">
-                <span className="flex size-8 items-center justify-center rounded-full bg-success/15 text-success-foreground">
+                <span className="flex size-8 items-center justify-center rounded-full bg-success/15 text-success">
                   <Check className="size-4" />
                 </span>
                 User created

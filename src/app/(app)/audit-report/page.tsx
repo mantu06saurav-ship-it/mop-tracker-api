@@ -84,7 +84,7 @@ function AuditReportPageContent() {
           </div>
         </div>
       ) : (
-        <div className="space-y-6">
+        <div className="space-y-4">
           <AuditKpiCards kpis={kpis} loading={loading} />
 
           <PortalSummaryCard rows={portalSummary} loading={loading} />

@@ -52,8 +52,8 @@ export function AvatarCard({ user, loading }: { user: User | undefined; loading:
   if (loading || !user) {
     return (
       <Card>
-        <CardContent className="flex flex-col items-center gap-3 py-8">
-          <Skeleton className="size-24 rounded-full" />
+        <CardContent className="flex flex-col items-center gap-2.5 py-6">
+          <Skeleton className="size-20 rounded-full" />
           <Skeleton className="h-5 w-32" />
           <Skeleton className="h-4 w-40" />
         </CardContent>
@@ -63,10 +63,10 @@ export function AvatarCard({ user, loading }: { user: User | undefined; loading:
 
   return (
     <Card>
-      <CardContent className="flex flex-col items-center gap-3 py-8 text-center">
-        <Avatar className="size-24">
+      <CardContent className="flex flex-col items-center gap-2.5 py-6 text-center">
+        <Avatar className="size-20">
           {user.ProfileImageUrl && <AvatarImage src={`${API_URL}${user.ProfileImageUrl}`} alt="" />}
-          <AvatarFallback className="text-2xl">{initials(user.FirstName, user.LastName)}</AvatarFallback>
+          <AvatarFallback className="text-xl">{initials(user.FirstName, user.LastName)}</AvatarFallback>
         </Avatar>
         <div>
           <p className="text-lg font-semibold">

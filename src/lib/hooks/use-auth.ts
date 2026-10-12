@@ -27,7 +27,7 @@ export function useUploadAvatar() {
   return useMutation({
     mutationFn: async (file: File) => {
       const form = new FormData();
-      form.append("avatar", file);
+      form.append("file", file);
       return (await apiClient.post<{ user: User }>("/api/auth/avatar", form)).data;
     },
   });

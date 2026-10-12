@@ -54,15 +54,15 @@ export function TrendCharts({
   const portalData = (portalBreakdown ?? []).map((p) => ({ name: portalLabel(p.portal), total: p.total }));
 
   return (
-    <div className="grid gap-4 lg:grid-cols-2">
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-lg">Compliance Trend</CardTitle>
+    <div className="grid gap-3 lg:grid-cols-2">
+      <Card className="border border-border/80 bg-card/80 shadow-sm">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base font-semibold tracking-tight">Compliance Trend</CardTitle>
           <p className="text-xs text-muted-foreground">Compliance % across recent scrape batches</p>
         </CardHeader>
         <CardContent>
           {trendsLoading ? (
-            <Skeleton className="h-72 w-full" />
+            <Skeleton className="h-72 w-full rounded-xl" />
           ) : trendData.length === 0 ? (
             <p className="flex h-72 items-center justify-center text-sm text-muted-foreground">No trend data yet.</p>
           ) : (
@@ -73,21 +73,21 @@ export function TrendCharts({
                 <YAxis domain={[0, 100]} tick={{ fontSize: 11 }} stroke="var(--muted-foreground)" />
                 <RechartsTooltip content={<ChartTooltip />} />
                 <Legend wrapperStyle={{ fontSize: 12 }} />
-                <Line type="monotone" dataKey="compliance_pct" name="Compliance %" stroke="var(--chart-1)" strokeWidth={2} dot={{ r: 3 }} />
+                <Line type="monotone" dataKey="compliance_pct" name="Compliance %" stroke="var(--chart-1)" strokeWidth={3} dot={{ r: 3 }} activeDot={{ r: 5 }} />
               </LineChart>
             </ResponsiveContainer>
           )}
         </CardContent>
       </Card>
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-lg">SKU Count by Portal</CardTitle>
+      <Card className="border border-border/80 bg-card/80 shadow-sm">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base font-semibold tracking-tight">SKU Count by Portal</CardTitle>
           <p className="text-xs text-muted-foreground">Total tracked listings per marketplace</p>
         </CardHeader>
         <CardContent>
           {portalBreakdownLoading ? (
-            <Skeleton className="h-72 w-full" />
+            <Skeleton className="h-72 w-full rounded-xl" />
           ) : portalData.length === 0 ? (
             <p className="flex h-72 items-center justify-center text-sm text-muted-foreground">No portal data yet.</p>
           ) : (
