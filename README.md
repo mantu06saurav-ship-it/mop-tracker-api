@@ -83,8 +83,8 @@ installation keeps the existing default schedule of 00:00, 06:00, 12:00, and 18:
 
 The root `render.yaml` defines both services. The API builds with Docker to install Microsoft's
 SQL Server ODBC driver; the Next.js service uses `frontend/` as its root directory. The
-Blueprint wires `NEXT_PUBLIC_API_URL` to the API's public URL and allows the frontend URL through
-the API's CORS setting. Sync the Blueprint after pushing changes to create or update both services.
+Blueprint wires `NEXT_PUBLIC_API_URL` to the API's public URL .
+After the frontend service gets its public URL, add it to the API service's `CORS_ORIGINS` environment variable and redeploy the API. Sync the Blueprint after pushing changes to create or update both services.
 
 ## Deliberate differences from the Node app
 
