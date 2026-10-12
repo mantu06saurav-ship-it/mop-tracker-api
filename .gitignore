@@ -12,9 +12,6 @@ backend/uploads/avatars/*
 .pytest_cache/
 scrapy.cfg.local
 
-# The old nested checkout stays local; the integrated frontend is under frontend/.
-mop-tracker-web/
-.frontend-migration-backup/
 frontend/node_modules/
 frontend/.next/
 frontend/.env.local
