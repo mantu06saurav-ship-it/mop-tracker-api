@@ -3,7 +3,7 @@
 A modern Next.js 16 (App Router, TypeScript, Tailwind v4, shadcn/ui) frontend for the MOP Tracker
 marketplace price-compliance console. This is a fresh visual design — it does not clone the old
 HTML/CSS of the legacy app — but covers the same insights and functionality end-to-end, talking to
-the separate FastAPI backend at `E:\AI_Project\MOP_TRACKER_API` over HTTP.
+the separate FastAPI backend at `../backend` over HTTP.
 
 ## Stack
 
@@ -18,7 +18,7 @@ copy .env.example .env.local   # set NEXT_PUBLIC_API_URL to your FastAPI backend
 npm run dev                    # http://localhost:3000
 ```
 
-The backend must be running (see `E:\AI_Project\MOP_TRACKER_API\README.md`) and its `CORS_ORIGINS`
+The backend must be running (see `../backend/README.md`) and its `CORS_ORIGINS`
 env var must include this app's origin (`http://localhost:3000` by default).
 
 ## Auth model

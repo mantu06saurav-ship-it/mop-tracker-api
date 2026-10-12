@@ -3,8 +3,11 @@ __pycache__/
 .venv/
 venv/
 .env
-uploads/avatars/*
-!uploads/avatars/.gitkeep
+backend/.env
+backend/.venv/
+backend/venv/
+backend/uploads/avatars/*
+!backend/uploads/avatars/.gitkeep
 *.log
 .pytest_cache/
 scrapy.cfg.local
