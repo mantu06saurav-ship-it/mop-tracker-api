@@ -39,7 +39,7 @@ services:
   - type: web
     name: mop-tracker-web
     runtime: node
-    rootDir: mop-tracker-web
+    rootDir: frontend
     buildCommand: npm ci && npm run build
     startCommand: npm start
     envVars:
