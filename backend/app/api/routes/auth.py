@@ -88,7 +88,9 @@ def _register_impl(body: RegisterRequest, current: dict | None = None) -> dict:
                 },
             )
             new_id = result.fetchone().UserId
-        except IntegrityError:
+        except IntegrityError as exc:
+            if "FOREIGN KEY" in str(exc.orig):
+                raise HTTPException(status_code=400, detail="Selected reporting manager does not exist")
             raise HTTPException(status_code=409, detail="Employee code or email already exists")
 
         return {"user": _fetch_public_user(conn, new_id)}
