@@ -24,6 +24,17 @@ USER_AGENTS = [
 
 MAX_RETRIES = 2  # 3 attempts total, matching the Node scraper's retry budget
 
+# Without this Scrapy's HttpErrorMiddleware drops every non-2xx response before parse() sees
+# it, so the bot-block retries below never ran and a throttled product was only counted as a
+# job error ("Ignoring non-200 response") with no row written at all.
+HANDLED_STATUSES = [403, 404, 429, 500, 502, 503]
+
+_PLAYWRIGHT_META = {
+    "playwright": True,
+    "playwright_context": "default",
+    "playwright_page_goto_kwargs": {"wait_until": "domcontentloaded"},
+}
+
 _NUMERIC_CLEAN_RE = re.compile(r"[^\d.]")
 
 
@@ -40,6 +51,7 @@ def _random_headers():
 
 class AmazonSpider(scrapy.Spider):
     name = "amazon"
+    handle_httpstatus_list = HANDLED_STATUSES
 
     custom_settings = {"DOWNLOAD_DELAY": 1.0, "RANDOMIZE_DOWNLOAD_DELAY": True}
 
@@ -60,6 +72,15 @@ class AmazonSpider(scrapy.Spider):
                 meta={"record": record, "retry_count": 0},
                 dont_filter=True,
             )
+
+    def _playwright_request(self, url, record):
+        return scrapy.Request(
+            url,
+            callback=self.parse,
+            errback=self.errback,
+            meta={"record": record, "retry_count": MAX_RETRIES, **_PLAYWRIGHT_META},
+            dont_filter=True,
+        )
 
     def _yield_item(self, record, response, scraped):
         price = parse_price(scraped.get("price"))
@@ -100,6 +121,10 @@ class AmazonSpider(scrapy.Spider):
                     dont_filter=True,
                 )
                 return
+            # Plain HTTP is still being throttled; a real browser usually gets the page.
+            if not response.meta.get("playwright"):
+                yield self._playwright_request(response.url, record)
+                return
             status_label = "Bot blocked (503)" if response.status == 503 else f"HTTP {response.status}"
             yield self._yield_item(record, response, base_result(scrap_status=f"ERROR: {status_label}"))
             return
@@ -116,19 +141,7 @@ class AmazonSpider(scrapy.Spider):
         # rendered HTML comes back as an ordinary response, so _extract() is reused as-is.
         if "validateCaptcha" in body and "productTitle" not in body:
             if not response.meta.get("playwright"):
-                yield scrapy.Request(
-                    response.url,
-                    callback=self.parse,
-                    errback=self.errback,
-                    meta={
-                        "record": record,
-                        "retry_count": MAX_RETRIES,
-                        "playwright": True,
-                        "playwright_context": "default",
-                        "playwright_page_goto_kwargs": {"wait_until": "domcontentloaded"},
-                    },
-                    dont_filter=True,
-                )
+                yield self._playwright_request(response.url, record)
                 return
             yield self._yield_item(record, response, base_result(scrap_status="ERROR: Bot blocked (soft challenge page)"))
             return

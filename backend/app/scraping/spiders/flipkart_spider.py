@@ -334,8 +334,14 @@ _EVAL_JS = r"""
 """
 
 
+# Let non-2xx responses reach parse() (Scrapy's HttpErrorMiddleware drops them otherwise), so a
+# delisted product or a block is recorded as an ERROR row instead of vanishing from the batch.
+HANDLED_STATUSES = [403, 404, 429, 500, 502, 503]
+
+
 class FlipkartSpider(scrapy.Spider):
     name = "flipkart"
+    handle_httpstatus_list = HANDLED_STATUSES
 
     custom_settings = {"DOWNLOAD_DELAY": 1.5, "RANDOMIZE_DOWNLOAD_DELAY": True}
 
@@ -369,9 +375,15 @@ class FlipkartSpider(scrapy.Spider):
         record = response.meta["record"]
         page = response.meta["playwright_page"]
         try:
-            scraped = await on_page_loop(self._extract(page))
+            if response.status == 404:
+                scraped = base_result(title="ERROR", scrap_status="NOT FOUND")
+            elif response.status != 200:
+                scraped = base_result(scrap_status=f"ERROR: HTTP {response.status}")
+            else:
+                scraped = await on_page_loop(self._extract(page))
         except Exception as exc:  # noqa: BLE001 — never let extraction errors escape to errback
-            scraped = base_result(title="ERROR", scrap_status=str(exc))
+            self.logger.warning("%s %s: extraction failed (%s)", self.name, record.get("code"), exc)
+            scraped = base_result(scrap_status=f"ERROR: {type(exc).__name__}")
         finally:
             await close_page(page)
 

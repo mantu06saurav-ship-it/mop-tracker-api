@@ -201,13 +201,24 @@ _EVAL_JS = r"""
     result.seller = seller || "LIBERTY SHOES LIMITED";
 
     // ---- available sizes ----
+    // Every size is a JSON-LD variant carrying its own availability. (The old
+    // `[class*="size"] button` selector only ever matched the size carousel's
+    // "Previous"/"Next" arrows.) DOM swatches are the fallback.
     const sizeSet = new Set();
-    const sizeEls = document.querySelectorAll(
-        '[class*="size" i] button, [class*="size-box" i], [class*="size-chip" i]'
-    );
-    for (const el of sizeEls) {
-        const t = textOf(el);
-        if (t && t.length <= 12) sizeSet.add(t);
+    const variants = group && Array.isArray(group.hasVariant) ? group.hasVariant : [];
+    for (const v of variants) {
+        const label = v && v.size ? String(v.size).trim() : "";
+        if (!label) continue;
+        const offer = Array.isArray(v.offers) ? v.offers[0] : v.offers;
+        const oos = offer && offer.availability && !/instock/i.test(offer.availability);
+        sizeSet.add(oos ? `${label} (OOS)` : label);
+    }
+    if (!sizeSet.size) {
+        for (const el of document.querySelectorAll(".size-swatch")) {
+            const t = textOf(el);
+            if (!t || t.length > 12) continue;
+            sizeSet.add(el.querySelector('[class*="oos" i]') ? `${t} (OOS)` : t);
+        }
     }
     result.available_sizes = sizeSet.size ? Array.from(sizeSet).join(", ") : null;
 
@@ -232,8 +243,16 @@ _EVAL_JS = r"""
 """
 
 
+# Let non-2xx responses reach parse() (Scrapy's HttpErrorMiddleware drops them otherwise): a
+# delisted code (404) or an Akamai block (403) is then recorded as an ERROR row instead of
+# vanishing from the batch — and is never run through the extraction below, which would read the
+# error page's <h1> as a title and default its seller to Liberty.
+HANDLED_STATUSES = [403, 404, 429, 500, 502, 503]
+
+
 class AjioSpider(scrapy.Spider):
     name = "ajio"
+    handle_httpstatus_list = HANDLED_STATUSES
 
     custom_settings = {"DOWNLOAD_DELAY": 1.5, "RANDOMIZE_DOWNLOAD_DELAY": True}
 
@@ -255,6 +274,9 @@ class AjioSpider(scrapy.Spider):
                     "playwright": True,
                     "playwright_include_page": True,
                     "playwright_context": "default",
+                    # Same as the Node scraper: don't wait for the full `load` event (trackers
+                    # keep it pending); _scrape_page() already waits for the page to settle.
+                    "playwright_page_goto_kwargs": {"wait_until": "domcontentloaded"},
                 },
                 dont_filter=True,
             )
@@ -263,7 +285,15 @@ class AjioSpider(scrapy.Spider):
         record = response.meta["record"]
         page = response.meta["playwright_page"]
         try:
-            scraped = await on_page_loop(self._scrape_page(page, record.get("code")))
+            if response.status == 403:
+                scraped = base_result(scrap_status="ERROR: Bot blocked (403)")
+            elif response.status != 200:
+                scraped = base_result(scrap_status=f"ERROR: HTTP {response.status}")
+            else:
+                scraped = await on_page_loop(self._scrape_page(page, record.get("code")))
+        except Exception as exc:  # noqa: BLE001 — an uncaught error here dropped the record entirely
+            self.logger.warning("%s %s: extraction failed (%s)", self.name, record.get("code"), exc)
+            scraped = base_result(scrap_status=f"ERROR: {type(exc).__name__}")
         finally:
             await close_page(page)
 

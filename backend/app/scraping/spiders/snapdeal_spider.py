@@ -2,9 +2,10 @@
 
 Snapdeal serves fully server-rendered HTML for its product pages and its routing ignores the
 slug prefix before the pog-id, so a single plain HTTP GET (rotating UA only) is enough — no
-browser automation or retry loop needed.
+browser automation needed, just a short retry loop for throttling responses.
 """
 
+import random
 import re
 
 import scrapy
@@ -15,16 +16,32 @@ from app.services.job_store import job_store
 
 USER_AGENTS = [
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) "
-    "Chrome/91.0.4472.124 Safari/537.36",
+    "Chrome/141.0.0.0 Safari/537.36",
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) "
-    "Chrome/124.0.0.0 Safari/537.36",
+    "Chrome/140.0.0.0 Safari/537.36",
 ]
+
+MAX_RETRIES = 2  # 3 attempts total, same budget as the other spiders
+
+# Let non-2xx responses reach parse() (Scrapy's HttpErrorMiddleware drops them otherwise), so a
+# throttled product is retried and a dead pog-id is still recorded as an ERROR row instead of
+# vanishing from the batch.
+HANDLED_STATUSES = [403, 404, 429, 500, 502, 503]
 
 _NUM_RE = re.compile(r"[\d,]+(?:\.\d+)?")
 
 
+def _random_headers():
+    return {
+        "User-Agent": random.choice(USER_AGENTS),
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+        "Accept-Language": "en-IN,en;q=0.9",
+    }
+
+
 class SnapdealSpider(scrapy.Spider):
     name = "snapdeal"
+    handle_httpstatus_list = HANDLED_STATUSES
 
     custom_settings = {"DOWNLOAD_DELAY": 1.0, "RANDOMIZE_DOWNLOAD_DELAY": True}
 
@@ -34,8 +51,6 @@ class SnapdealSpider(scrapy.Spider):
         self.batch_id = batch_id
 
     async def start(self):
-        import random
-
         for record in self.records:
             code = record.get("code")
             url = f"https://www.snapdeal.com/product/p/{code}"
@@ -43,13 +58,21 @@ class SnapdealSpider(scrapy.Spider):
                 url,
                 callback=self.parse,
                 errback=self.errback,
-                headers={"User-Agent": random.choice(USER_AGENTS)},
-                meta={"record": record},
+                headers=_random_headers(),
+                meta={"record": record, "retry_count": 0},
                 dont_filter=True,
             )
 
     def parse(self, response):
         record = response.meta["record"]
+        retry_count = response.meta.get("retry_count", 0)
+
+        if response.status in (429, 503, 403) and retry_count < MAX_RETRIES:
+            yield response.request.replace(
+                headers=_random_headers(),
+                meta={"record": record, "retry_count": retry_count + 1},
+            )
+            return
 
         if response.status != 200:
             scraped = base_result(scrap_status=f"ERROR: HTTP {response.status}")
@@ -83,12 +106,13 @@ class SnapdealSpider(scrapy.Spider):
         title = response.css("h1.pdp-e-i-head::text").get()
         title = title.strip() if title else None
 
-        mrp_raw = response.css("div.pdpCutPrice::text").get()
+        # The amount is a bare text node *after* the "MRP" label div (`MRP Rs. 2,999 (Inclusive
+        # of all taxes)`), so read all of the block's text, not just its first (blank) node.
+        mrp_raw = " ".join(response.css("div.pdpCutPrice ::text").getall())
         mrp = None
-        if mrp_raw:
-            m = _NUM_RE.search(mrp_raw)
-            if m:
-                mrp = m.group(0).replace(",", "")
+        m = _NUM_RE.search(mrp_raw)
+        if m:
+            mrp = m.group(0).replace(",", "")
 
         price = response.css("span.payBlkBig::text").get()
 
@@ -98,20 +122,24 @@ class SnapdealSpider(scrapy.Spider):
         reviews = response.css("span.total-rating.showRatingTooltip::text").get()
         reviews = reviews.strip() if reviews else None
 
-        sizes = response.css("div.attr-val::text").getall()
-        sizes = [s.strip() for s in sizes if s.strip()]
+        # Only the size chips (the colour swatches share the `attr-val` class); `data-sold` marks
+        # a sold-out size.
+        sizes = []
+        for chip in response.css("div.attr-squared"):
+            label = (chip.css(".attr-val::text").get() or "").strip()
+            if label:
+                sizes.append(f"{label} (OOS)" if chip.attrib.get("data-sold") == "true" else label)
         available_sizes = ", ".join(sizes) if sizes else None
 
-        seller_full = " ".join(t.strip() for t in response.css(".pdp-e-seller-info-name ::text").getall() if t.strip())
-        seller_store = " ".join(
-            t.strip() for t in response.css(".pdp-e-seller-info-name .pdp-e-seller-info-name-store ::text").getall() if t.strip()
-        )
-        seller = None
-        if seller_full:
-            seller = seller_full
-            if seller_store:
-                seller = seller.replace(seller_store, "").strip()
-            seller = seller or None
+        # The seller name link and the "View Store" link both carry `pdp-e-seller-info-name`;
+        # the store link additionally has `pdp-e-seller-info-name-store` on the same element.
+        seller = " ".join(
+            t.strip()
+            for t in response.css(
+                ".pdp-e-seller-info-name:not(.pdp-e-seller-info-name-store) ::text"
+            ).getall()
+            if t.strip()
+        ) or None
 
         image_url = response.css('meta[property="og:image"]::attr(content)').get()
 

@@ -38,9 +38,22 @@ _DB_COLUMNS = [
 ]
 
 
+# dbo.mop_tracker column widths. SQL Server rejects the whole INSERT when one value is too long
+# (e.g. an exception message landing in scrap_status), which silently lost the row, so values
+# are clipped to fit instead.
+_MAX_LENGTHS = {
+    "batch_id": 50, "portal": 50, "code_type": 20, "code": 100, "sku": 100, "title": 500,
+    "reviews": 50, "seller": 200, "product_url": 1000, "image_url": 1000,
+    "inventory_status": 30, "scrap_status": 50, "price_status": 20,
+}
+
+
 class MopTrackerPipeline:
     def process_item(self, item, spider):
         row = {col: item.get(col) for col in _DB_COLUMNS}
+        for col, max_len in _MAX_LENGTHS.items():
+            if isinstance(row[col], str) and len(row[col]) > max_len:
+                row[col] = row[col][:max_len]
         batch_id = row["batch_id"]
 
         try:

@@ -39,6 +39,11 @@ SCRAPY_SETTINGS = {
     "PLAYWRIGHT_BROWSER_TYPE": "chromium",
     "PLAYWRIGHT_LAUNCH_OPTIONS": {
         "headless": True,
+        # Plain `headless: True` runs Playwright's stripped-down "chromium-headless-shell", whose
+        # fingerprint Akamai recognises: Ajio answers it with 403 Access Denied on every product.
+        # The "chromium" channel runs the full Chromium build in new-headless mode instead, which
+        # is served the real page (same binary `playwright install chromium` already ships).
+        "channel": "chromium",
         "args": BROWSER_LAUNCH_ARGS,
     },
     "PLAYWRIGHT_CONTEXTS": {

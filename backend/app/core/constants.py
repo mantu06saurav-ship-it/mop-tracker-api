@@ -4,7 +4,7 @@ ADMIN_ROLES = ["Super Admin"]
 AUTO_SCRAPE_PORTALS = ["flipkart", "amazon", "myntra", "snapdeal", "ajio"]
 DEFAULT_PINCODE = "110001"
 
-BROWSER_PORTALS = {"flipkart", "myntra", "ajio"}
+BROWSER_PORTALS = {"flipkart", "ajio"}
 BROWSER_RECYCLE_EVERY = 40
 
 AVATAR_MIME_EXT = {
