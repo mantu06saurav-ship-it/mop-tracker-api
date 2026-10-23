@@ -274,6 +274,13 @@ def ensure_scrape_schedule_settings(conn) -> None:
                 """
             )
         )
+    # Written by the Windows Task Scheduler scrape runner (app/scraping/runner.py): which
+    # scheduled slot ran last, and how the most recent run went, for display in the web app.
+    _add_column_if_missing(conn, "scrape_schedule_settings", "last_run_slot", "VARCHAR(20)")
+    _add_column_if_missing(conn, "scrape_schedule_settings", "last_run_status", "VARCHAR(20)")
+    _add_column_if_missing(conn, "scrape_schedule_settings", "last_run_started_at", "DATETIME")
+    _add_column_if_missing(conn, "scrape_schedule_settings", "last_run_finished_at", "DATETIME")
+    _add_column_if_missing(conn, "scrape_schedule_settings", "last_run_summary", "NVARCHAR(500)")
     conn.execute(
         text(
             """

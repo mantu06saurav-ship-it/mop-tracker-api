@@ -6,7 +6,9 @@ from sqlalchemy import text
 from app.api.deps import get_current_user, require_admin
 from app.db.session import get_conn
 from app.schemas.misc import ScrapeScheduleRequest
-from app.services.scheduler import configure_auto_scrape_schedule
+
+# The schedule is only stored here. The Windows Task Scheduler scrape runner
+# (app/scraping/runner.py) reads it on every check and writes the last_run_* columns back.
 
 router = APIRouter(prefix="/api/scrape-schedule", tags=["scrape schedule"])
 _TIME_RE = re.compile(r"^(?:[01]\d|2[0-3]):[0-5]\d$")
@@ -50,5 +52,4 @@ def update_scrape_schedule(body: ScrapeScheduleRequest, admin: dict = Depends(re
             {"enabled": body.enabled, "times": ",".join(times), "updated_by": admin["email"]},
         )
 
-    configure_auto_scrape_schedule(body.enabled, times)
     return {"schedule": _get_schedule(), "timezone": "Asia/Kolkata"}

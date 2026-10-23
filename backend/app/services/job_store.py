@@ -1,6 +1,6 @@
 """In-memory scrape-job registry — deliberately not persisted, mirrors the Node app's
-`const jobs = {}` (lost on restart, single-process). Thread-safe enough for FastAPI's
-threadpool + asyncio usage since dict item assignment is atomic under the GIL.
+`const jobs = {}`. Lives inside one scrape-runner process (app/scraping/runner.py), where the
+spiders and the DB pipeline update a batch's done/error/insert counters for its run summary.
 """
 
 import threading

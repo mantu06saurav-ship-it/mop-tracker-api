@@ -86,19 +86,6 @@ export interface ComplianceDailyRow extends TrackerRow {
   snapshot_date: string;
 }
 
-export interface Job {
-  job_id: string;
-  status: "QUEUED" | "RUNNING" | "DONE" | "FAILED";
-  total: number;
-  done: number;
-  errors: number;
-  inserted: number;
-  db_error: string | null;
-  last_error: string | null;
-  percent: number;
-  rows: TrackerRow[];
-}
-
 export interface SellerMappingRow {
   id: number;
   seller: string;
@@ -136,6 +123,11 @@ export interface ScrapeSchedule {
   times: string[];
   updated_by: string | null;
   updated_at: string | null;
+  /** Written by the scraper PC's Task Scheduler runner after each run. */
+  last_run_status: "RUNNING" | "DONE" | "FAILED" | "INTERRUPTED" | null;
+  last_run_started_at: string | null;
+  last_run_finished_at: string | null;
+  last_run_summary: string | null;
 }
 
 export interface ScrapeScheduleResponse {

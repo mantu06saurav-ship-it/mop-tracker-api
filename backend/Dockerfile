@@ -16,9 +16,10 @@ RUN apt-get update \
     && ACCEPT_EULA=Y apt-get install -y --no-install-recommends msodbcsql18 \
     && rm -rf /var/lib/apt/lists/*
 
+# API-only dependencies: scraping (Scrapy + Playwright/Chromium) runs on a separate Windows PC,
+# so no browser is installed in this image.
 COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt \
-    && playwright install --with-deps chromium
+RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . .
 RUN mkdir -p uploads/avatars

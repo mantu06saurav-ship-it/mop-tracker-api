@@ -32,7 +32,7 @@ export const NAV_SECTIONS: NavSection[] = [
     label: "Operations",
     items: [
       { href: "/operations", label: "Overview", icon: LayoutDashboard, roles: ["Super Admin", "Manager"], badge: "below-mop" },
-      { href: "/operations/upload", label: "Upload & Scrape", icon: UploadCloud, roles: ["Super Admin", "Manager"] },
+      { href: "/operations/upload", label: "Upload Products", icon: UploadCloud, roles: ["Super Admin", "Manager"] },
       { href: "/operations/history", label: "History", icon: History, roles: ["Super Admin"] },
       { href: "/operations/master-data", label: "Master Data Upload", icon: Database, roles: ["Super Admin"] },
     ],

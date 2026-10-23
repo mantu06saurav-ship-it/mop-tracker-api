@@ -1,9 +1,8 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-import { useQueryClient } from "@tanstack/react-query";
+import { useState } from "react";
 import { toast } from "sonner";
-import { ChevronDown, Loader2, PlayCircle, UploadCloud } from "lucide-react";
+import { CalendarClock, ChevronDown, Loader2, UploadCloud } from "lucide-react";
 import { RequireAuth } from "@/components/shared/require-auth";
 import { PageHeader } from "@/components/shared/page-header";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -11,34 +10,23 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { FileDropZone } from "@/components/operations/file-drop-zone";
 import { UploadResultAlert } from "@/components/operations/upload-result-alert";
-import { StepStrip } from "@/components/operations/step-strip";
-import { ScrapeMonitor } from "@/components/operations/scrape-monitor";
-import { useUploadMopData, useRunScrapeJob, useRunAllPortalsScrapeJob, type UploadResult } from "@/lib/hooks/use-mop-data";
-import { useJobPolling } from "@/lib/hooks/use-job";
+import { describeLastRun } from "@/components/users/auto-scrape-schedule";
+import { useUploadMopData, type UploadResult } from "@/lib/hooks/use-mop-data";
+import { useScrapeSchedule } from "@/lib/hooks/use-scrape-schedule";
 import { apiErrorMessage } from "@/lib/api-client";
-import { PORTALS } from "@/lib/types";
 
 const REQUIRED_HEADERS = ["BRAND", "PORTAL", "CODE TYPE", "CODE", "SKU CODE", "MOP FOR", "MOP"];
 
-function UploadAndScrape() {
-  const queryClient = useQueryClient();
-
-  // Step 1 — import
+function UploadProducts() {
   const [file, setFile] = useState<File | null>(null);
   const [override, setOverride] = useState(false);
   const [uploadResult, setUploadResult] = useState<UploadResult | null>(null);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [guideOpen, setGuideOpen] = useState(false);
   const uploadMutation = useUploadMopData();
-
-  // Step 2 — scrape
-  const [portal, setPortal] = useState<string>("all");
-  const runScrapeMutation = useRunScrapeJob();
-  const runAllScrapeMutation = useRunAllPortalsScrapeJob();
-  const jobPolling = useJobPolling();
+  const scheduleQuery = useScrapeSchedule();
 
   async function handleUpload() {
     if (!file) return;
@@ -53,42 +41,15 @@ function UploadAndScrape() {
     }
   }
 
-  async function handleStartScrape() {
-    try {
-      const { job_id } =
-        portal === "all" ? await runAllScrapeMutation.mutateAsync() : await runScrapeMutation.mutateAsync(portal);
-      jobPolling.start(job_id);
-    } catch (err) {
-      toast.error(apiErrorMessage(err, "Could not start the scrape job."));
-    }
-  }
-
-  const isStartingScrape = runScrapeMutation.isPending || runAllScrapeMutation.isPending;
-
-  // Fire the dashboard refresh + toast exactly once when a job completes.
-  const lastNotifiedRef = useRef<string | null>(null);
-  useEffect(() => {
-    if (jobPolling.state.phase !== "done") return;
-    const jobId = jobPolling.state.job.job_id;
-    if (jobId === lastNotifiedRef.current) return;
-    lastNotifiedRef.current = jobId;
-    toast.success("Scraping complete — dashboard updated.");
-    queryClient.invalidateQueries({ queryKey: ["dashboard"] });
-    queryClient.invalidateQueries({ queryKey: ["batches"] });
-  }, [jobPolling.state, queryClient]);
-
   return (
     <div>
-      <PageHeader title="Upload & Scrape" description="Import products, then run a live price check against a marketplace." />
-
-      <StepStrip activeStep={1} />
+      <PageHeader title="Upload Products" description="Import or update the products whose marketplace prices are tracked." />
 
       <div className="space-y-4">
-        {/* Step 1 */}
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <UploadCloud className="size-4" /> Step 1 · Import products
+              <UploadCloud className="size-4" /> Import products
             </CardTitle>
             <CardDescription>Upload a MOP spreadsheet to add or update products in the database.</CardDescription>
           </CardHeader>
@@ -137,45 +98,18 @@ function UploadAndScrape() {
           </CardContent>
         </Card>
 
-        {/* Step 2 */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <PlayCircle className="size-4" /> Step 2 · Run scraping
-            </CardTitle>
-            <CardDescription>Runs against every saved product for the chosen marketplace (or all of them) — no upload required here.</CardDescription>
-          </CardHeader>
-          <CardContent className="flex flex-col gap-3 sm:flex-row sm:items-center">
-            <Select value={portal} onValueChange={setPortal}>
-              <SelectTrigger className="w-full sm:w-48">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All portals</SelectItem>
-                {PORTALS.map((p) => (
-                  <SelectItem key={p} value={p}>
-                    {p[0].toUpperCase() + p.slice(1)}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <Button onClick={handleStartScrape} disabled={isStartingScrape || jobPolling.state.phase === "polling"}>
-              {(isStartingScrape || jobPolling.state.phase === "polling") && <Loader2 className="size-3.5 animate-spin" />}
-              Start scraping
-            </Button>
-          </CardContent>
-        </Card>
-
-        {/* Step 3 */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Step 3 · Monitor results</CardTitle>
-            <CardDescription>Live progress for the scrape job you just started.</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <ScrapeMonitor state={jobPolling.state} />
-          </CardContent>
-        </Card>
+        <Alert className="bg-primary/[0.04]">
+          <CalendarClock />
+          <AlertDescription className="space-y-1">
+            <p>
+              Marketplace prices are checked automatically by the scraper PC on its schedule. Uploaded products are
+              included in the next run.
+            </p>
+            {scheduleQuery.data && (
+              <p className="text-xs">{describeLastRun(scheduleQuery.data.schedule, scheduleQuery.data.timezone)}</p>
+            )}
+          </AlertDescription>
+        </Alert>
       </div>
     </div>
   );
@@ -184,7 +118,7 @@ function UploadAndScrape() {
 export default function UploadPage() {
   return (
     <RequireAuth roles={["Super Admin", "Manager"]}>
-      <UploadAndScrape />
+      <UploadProducts />
     </RequireAuth>
   );
 }

@@ -13,9 +13,30 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Switch } from "@/components/ui/switch";
 import { apiErrorMessage } from "@/lib/api-client";
 import { useScrapeSchedule, useUpdateScrapeSchedule } from "@/lib/hooks/use-scrape-schedule";
-import type { ScrapeScheduleResponse } from "@/lib/types";
+import type { ScrapeSchedule, ScrapeScheduleResponse } from "@/lib/types";
 
 const STANDARD_TIMES = ["00:00", "06:00", "12:00", "18:00"];
+
+/** One-line status of the scraper PC's most recent run, for the schedule card and upload page. */
+export function describeLastRun(schedule: ScrapeSchedule, timeZone: string): string {
+  const format = (value: string | null) =>
+    value
+      ? new Intl.DateTimeFormat("en-IN", { dateStyle: "medium", timeStyle: "short", timeZone }).format(new Date(value))
+      : "an unknown time";
+  const summary = schedule.last_run_summary ? `: ${schedule.last_run_summary}` : ".";
+  switch (schedule.last_run_status) {
+    case "RUNNING":
+      return `A price check is running on the scraper PC (started ${format(schedule.last_run_started_at)}).`;
+    case "DONE":
+      return `Last price check finished ${format(schedule.last_run_finished_at)}${summary}`;
+    case "FAILED":
+      return `Last price check failed ${format(schedule.last_run_finished_at)}${summary}`;
+    case "INTERRUPTED":
+      return `Last price check (started ${format(schedule.last_run_started_at)}) stopped before finishing — the scraper PC was likely shut down or restarted.`;
+    default:
+      return "No price check has run from the scraper PC yet.";
+  }
+}
 
 function getNextRun(times: string[], enabled: boolean, now: Date): string | null {
   if (!enabled || times.length === 0) return null;
@@ -90,7 +111,7 @@ function ScheduleForm({ data }: { data: ScrapeScheduleResponse }) {
           </div>
           <div>
             <CardTitle>Auto-scrape schedule</CardTitle>
-            <CardDescription className="mt-1">Choose when the marketplace scrape sweep runs each day.</CardDescription>
+            <CardDescription className="mt-1">Choose when the scraper PC runs the marketplace price check each day.</CardDescription>
           </div>
         </div>
         <Badge variant={isDirty ? "outline" : enabled ? "default" : "secondary"} className="shrink-0">
@@ -180,9 +201,11 @@ function ScheduleForm({ data }: { data: ScrapeScheduleResponse }) {
             {enabled
               ? nextRun ? <>{isDirty ? "After saving, next run" : "Next run"} <span className="font-semibold text-foreground">{nextRun} IST</span>. The sweep checks Flipkart, Amazon, Myntra, Snapdeal, and Ajio.</>
                 : "Choose at least one run time to enable the schedule."
-              : "Automatic scraping is paused. Manual scrape runs remain available."}
+              : "Automatic scraping is paused. No marketplace prices are checked until it is turned back on."}
           </AlertDescription>
         </Alert>
+
+        <p className="text-xs text-muted-foreground">{describeLastRun(data.schedule, data.timezone)}</p>
 
         {enabled && times.length === 0 && (
           <p className="text-xs text-destructive">Add a run time before enabling the schedule.</p>

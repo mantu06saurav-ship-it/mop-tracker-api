@@ -12,7 +12,6 @@ from app.api.routes import (
     catalog,
     email_settings,
     inventory,
-    jobs,
     latest_zfg,
     mop_data,
     reports,
@@ -35,10 +34,10 @@ UPLOADS_DIR.mkdir(parents=True, exist_ok=True)
 async def lifespan(app: FastAPI):
     ensure_all_tables()
 
-    from app.services.scrape_orchestrator import ensure_reactor_installed
+    # Scraping does not run in this process (see app/scraping/runner.py); this only drives the
+    # daily snapshot email.
     from app.services.scheduler import start_scheduler
 
-    ensure_reactor_installed()
     scheduler = start_scheduler()
     logger.info("MOP Tracker API started.")
     yield
@@ -61,7 +60,6 @@ app.mount("/uploads", StaticFiles(directory=str(UPLOADS_DIR)), name="uploads")
 app.include_router(auth.router)
 app.include_router(users.router)
 app.include_router(mop_data.router)
-app.include_router(jobs.router)
 app.include_router(reports.router)
 app.include_router(seller_mapping.router)
 app.include_router(email_settings.router)

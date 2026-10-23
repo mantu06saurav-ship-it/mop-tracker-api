@@ -1,0 +1,8 @@
+# Scraper PC (Windows Task Scheduler runs `python -m app.scraping.runner --scheduled`).
+# After installing, also run once: playwright install chromium
+-r requirements.txt
+
+scrapy>=2.11.2
+scrapy-playwright>=0.0.41
+playwright>=1.47.0
+itemadapter>=0.9.0
